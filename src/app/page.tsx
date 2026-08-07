@@ -1,69 +1,66 @@
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
+import { HomeTableSelector } from '@/components/order/HomeTableSelector';
 
 export default function Home() {
+  const VIDEO_URL = 'https://d1hddaam55e99y.cloudfront.net/1076/blank-menu/menu_video_1772730647976.mp4';
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-6 py-12 text-center bg-black">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover opacity-40"
+      >
+        <source src={VIDEO_URL} type="video/mp4" />
+      </video>
+
+      {/* Dark overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0f0d0b] via-black/60 to-black/80" />
+
+      {/* Ambient background glow */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-amber-500/10 blur-[120px]" />
+      
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-6 glass-panel p-8 sm:p-10 rounded-3xl border border-amber-500/20 shadow-2xl gold-glow">
+        <div className="relative h-36 w-36 overflow-hidden rounded-full border-2 border-amber-400/40 shadow-xl gold-glow">
+          <Image
+            src="/opa-logo.jpg"
+            alt="OPA Bar & Cafe Logo"
+            fill
+            className="object-cover transition-transform duration-700 hover:scale-105"
+            priority
+          />
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black tracking-wider gold-text-gradient uppercase">
+            OPA BAR &amp; CAFE
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xs leading-relaxed text-amber-100/80 font-medium max-w-xs mx-auto">
+            Scan the QR code on your table or select your table number below to order.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="w-full space-y-4 pt-1">
+          <HomeTableSelector />
+
+          <div className="pt-2 border-t border-amber-900/30 w-full flex items-center justify-center">
+            <Link
+              href="/admin/login"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors py-1 px-3 rounded-lg hover:bg-amber-500/10"
+            >
+              <span>Staff &amp; Admin Portal</span>
+              <span>→</span>
+            </Link>
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
+
+
+

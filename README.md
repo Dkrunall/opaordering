@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OPA Bar & Cafe — QR Table Ordering
 
-## Getting Started
+Next.js (App Router, TypeScript) + Supabase (Postgres, Auth, Realtime) + Tailwind CSS.
 
-First, run the development server:
+## 1. Create your Supabase project
+
+1. Go to https://supabase.com/dashboard → New project.
+2. Once it's provisioned, open **Project Settings → API** and copy:
+   - Project URL
+   - `anon` `public` key
+   - `service_role` key (keep this one secret — server-only)
+3. Copy `.env.local.example` to `.env.local` and fill in the three values.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 2. Run the database migrations
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open your Supabase project's **SQL Editor** and run these files **in order** (each is meant to run once against a fresh project):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. `supabase/migrations/0001_schema.sql` — tables, enums, indexes
+2. `supabase/migrations/0002_rls.sql` — row level security policies
+3. `supabase/migrations/0003_seed_tables.sql` — 20 starter dining tables (1–20)
+4. `supabase/migrations/0004_seed_menu.sql` — the full OPA menu (46 categories, 410 items, 328 price variants), extracted from the venue's live menu
+5. `supabase/migrations/0005_realtime.sql` — turns on Realtime for the `orders` table (powers the live customer status screen and admin dashboard)
+6. `supabase/migrations/0006_category_images.sql` — adds `categories.image_url`
+7. `supabase/migrations/0007_seed_category_images.sql` — populates it for 43 of 46 categories, sourced from Zillout's shared category-icon library
 
-## Learn More
+Paste each file's contents into the SQL Editor and click Run, in that order.
 
-To learn more about Next.js, take a look at the following resources:
+> If you'd rather use the Supabase CLI (`supabase link` + `supabase db push`) instead of the SQL Editor, these files are already laid out as CLI-compatible migrations — that works too.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 3. Create your first admin login
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app has no self-serve sign-up (by design — see the RLS notes in `0002_rls.sql`). Create the first manager account with:
 
-## Deploy on Vercel
+```bash
+npm run create-admin -- owner@opabar.com "a-strong-password" manager
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+(role is `manager` or `kitchen`; run it again with a different email for more logins)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 4. Install & run
+
+```bash
+npm install
+npm run dev
+```
+
+- Customer flow: http://localhost:3000/order?table=1
+- Admin login: http://localhost:3000/admin/login
+
+## Project structure
+
+```
+supabase/migrations/     SQL schema, RLS policies, seed data (run via SQL Editor)
+scripts/
+  generate-seed-sql.js   Regenerates 0003/0004 from scripts/menu_clean.json
+  menu_clean.json        Raw menu extract (categories/items/variants) from Zillout
+  create-admin.js        Creates a Supabase Auth user + admin_users row
+src/
+  app/                   Next.js App Router routes
+  lib/supabase/          Browser / server / middleware Supabase clients
+  types/database.ts      Hand-written TS types matching the SQL schema
+```
+
+## Data model notes (deviations from a bare veg/non-veg + single-price model)
+
+- **`menu_item_variants`** — many drinks (spirits, wine, beer, shots) sell by multiple serving sizes (Peg/Bottle, Glass/Bottle, Single Shot/Tray of 6/Tray of 12). `menu_items.price` is the "from" price for the list view; ordering a variant-bearing item always resolves to a specific `menu_item_variants` row, and `order_items.price_at_order` is captured from whichever was chosen.
+- **`dietary_type` + `is_alcoholic`** — the source menu tags items as `veg` / `non_veg` / `egg` / `seafood` / `alcoholic` / `non-alcoholic`, not a plain boolean. Food items get a `dietary_type`; drinks get `is_alcoholic` instead (dietary_type is null for them).
+- **Anonymous order visibility** — there's no customer login, so "customers can only read their own table's order" is enforced practically (unguessable UUID order ids, no PII ever stored) rather than via a true per-user RLS scope. See the comment above the `orders` policies in `0002_rls.sql` if you need to harden this later (e.g. a signed per-order token).
