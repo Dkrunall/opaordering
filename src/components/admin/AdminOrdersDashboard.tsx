@@ -3,19 +3,23 @@
 import { useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchActiveOrders, groupOrdersByTable, type AdminOrder } from '@/lib/data/adminOrders';
+import { fetchPendingServiceRequests, type ServiceRequestView } from '@/lib/data/serviceRequests';
 import { updateOrderStatus } from '@/lib/actions/adminOrders';
+import { acknowledgeServiceRequest } from '@/lib/actions/serviceRequests';
 import { NEXT_STATUS, ORDER_STATUS_LABEL } from '@/lib/orderStatus';
 import { formatPrice } from '@/lib/format';
 import {
   getNotificationPermission,
   isNotificationSupported,
   playNewOrderChime,
+  playServiceRequestChime,
   playStaleOrderChime,
   primeAudio,
   requestNotificationPermission,
   showBrowserNotification,
 } from '@/lib/alerts';
-import { BellIcon, BellOffIcon, WarningIcon } from '@/components/icons';
+import { BellIcon, BellOffIcon, CheckIcon, ConciergeBellIcon, DocumentIcon, WarningIcon } from '@/components/icons';
+import type { ServiceRequestType } from '@/types/database';
 
 const STALE_THRESHOLD_MS = 8 * 60 * 1000;
 const STALE_REALERT_MS = 60 * 1000;
@@ -132,6 +136,52 @@ function OrderCard({ order, soundOn }: { order: AdminOrder; soundOn: boolean }) 
   );
 }
 
+const SERVICE_REQUEST_LABEL: Record<ServiceRequestType, { label: string; icon: typeof ConciergeBellIcon }> = {
+  call_waiter: { label: 'Call Waiter', icon: ConciergeBellIcon },
+  request_bill: { label: 'Request Bill', icon: DocumentIcon },
+};
+
+function ServiceRequestCard({ request, onAcknowledge }: { request: ServiceRequestView; onAcknowledge: (id: string) => void }) {
+  const [isPending, startTransition] = useTransition();
+  const { label, icon: Icon } = SERVICE_REQUEST_LABEL[request.type];
+
+  function handleAcknowledge() {
+    startTransition(async () => {
+      try {
+        await acknowledgeServiceRequest(request.id);
+        onAcknowledge(request.id);
+      } catch {
+        // leave it in the list — the admin can just try again
+      }
+    });
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 shadow-md">
+      <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-300">
+          <Icon className="h-4.5 w-4.5" />
+        </span>
+        <div>
+          <p className="text-sm font-black text-amber-50">
+            Table {request.tableNumber} · {label}
+          </p>
+          <p className="text-[11px] text-amber-200/60">{timeAgo(request.createdAt)}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={handleAcknowledge}
+        disabled={isPending}
+        className="flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-extrabold text-black shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 transition-all"
+      >
+        <CheckIcon className="h-3.5 w-3.5" />
+        {isPending ? 'Clearing...' : 'Acknowledge'}
+      </button>
+    </div>
+  );
+}
+
 type NotificationState = NotificationPermission | 'unsupported' | null;
 
 function AlertsControl({ soundOn, onToggleSound }: { soundOn: boolean; onToggleSound: (on: boolean) => void }) {
@@ -182,10 +232,18 @@ function AlertsControl({ soundOn, onToggleSound }: { soundOn: boolean; onToggleS
   );
 }
 
-export function AdminOrdersDashboard({ initialOrders }: { initialOrders: AdminOrder[] }) {
+export function AdminOrdersDashboard({
+  initialOrders,
+  initialServiceRequests,
+}: {
+  initialOrders: AdminOrder[];
+  initialServiceRequests: ServiceRequestView[];
+}) {
   const [orders, setOrders] = useState(initialOrders);
+  const [serviceRequests, setServiceRequests] = useState(initialServiceRequests);
   const [soundOn, setSoundOn] = useState(true);
   const knownOrderIdsRef = useRef<Set<string> | null>(null);
+  const knownServiceRequestIdsRef = useRef<Set<string> | null>(null);
   const soundOnRef = useRef(soundOn);
 
   useEffect(() => {
@@ -216,8 +274,33 @@ export function AdminOrdersDashboard({ initialOrders }: { initialOrders: AdminOr
     }
   }, []);
 
+  const refetchServiceRequests = useCallback(async () => {
+    const supabase = createClient();
+    try {
+      const next = await fetchPendingServiceRequests(supabase);
+
+      if (knownServiceRequestIdsRef.current) {
+        const newlyRaised = next.filter((r) => !knownServiceRequestIdsRef.current!.has(r.id));
+        if (newlyRaised.length > 0) {
+          if (soundOnRef.current) playServiceRequestChime();
+          for (const request of newlyRaised) {
+            showBrowserNotification(
+              `Table ${request.tableNumber} — ${SERVICE_REQUEST_LABEL[request.type].label}`,
+              'Tap to view on the live orders board.'
+            );
+          }
+        }
+      }
+      knownServiceRequestIdsRef.current = new Set(next.map((r) => r.id));
+      setServiceRequests(next);
+    } catch (err) {
+      console.error('Failed to refresh service requests:', err);
+    }
+  }, []);
+
   useEffect(() => {
     knownOrderIdsRef.current = new Set(initialOrders.map((o) => o.id));
+    knownServiceRequestIdsRef.current = new Set(initialServiceRequests.map((r) => r.id));
   }, []);
 
   useEffect(() => {
@@ -227,12 +310,19 @@ export function AdminOrdersDashboard({ initialOrders }: { initialOrders: AdminOr
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         refetch();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+        refetchServiceRequests();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch]);
+  }, [refetch, refetchServiceRequests]);
+
+  function handleAcknowledgeRequest(id: string) {
+    setServiceRequests((prev) => prev.filter((r) => r.id !== id));
+  }
 
   const groups = groupOrdersByTable(orders);
   const placedCount = orders.filter((o) => o.status === 'placed').length;
@@ -268,9 +358,25 @@ export function AdminOrdersDashboard({ initialOrders }: { initialOrders: AdminOr
                 {readyCount} ready to serve
               </span>
             ) : null}
+            {serviceRequests.length > 0 ? (
+              <span className="flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-bold text-sky-300">
+                {serviceRequests.length} table request{serviceRequests.length === 1 ? '' : 's'}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>
+
+      {serviceRequests.length > 0 ? (
+        <div className="space-y-2.5">
+          <h2 className="text-xs font-black tracking-widest text-amber-400 uppercase">Table Requests</h2>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {serviceRequests.map((request) => (
+              <ServiceRequestCard key={request.id} request={request} onAcknowledge={handleAcknowledgeRequest} />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {groups.length === 0 ? (
         <div className="glass-panel mx-auto my-12 flex max-w-md flex-col items-center gap-3 rounded-2xl p-10 text-center border border-amber-900/30">

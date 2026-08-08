@@ -61,6 +61,19 @@ export function playStaleOrderChime() {
   tone(ctx, 392, now + 0.22, 0.22, 0.25);
 }
 
+/** Three quick same-pitch pings for a "Call Waiter" / "Request Bill" —
+ *  deliberately distinct from the two-note new-order chime, the rising
+ *  three-note ready chime, and the low stale-order buzz, so staff can tell
+ *  them apart by ear alone. */
+export function playServiceRequestChime() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  tone(ctx, 988, now, 0.1, 0.22);
+  tone(ctx, 988, now + 0.14, 0.1, 0.22);
+  tone(ctx, 988, now + 0.28, 0.16, 0.22);
+}
+
 export function vibrateIfSupported(pattern: number[]) {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {

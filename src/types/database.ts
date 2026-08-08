@@ -12,6 +12,8 @@
 export type OrderStatus = 'placed' | 'preparing' | 'ready' | 'served';
 export type AdminRole = 'manager' | 'kitchen';
 export type DietaryType = 'veg' | 'non_veg' | 'egg' | 'seafood';
+export type ServiceRequestType = 'call_waiter' | 'request_bill';
+export type ServiceRequestStatus = 'pending' | 'acknowledged';
 
 export interface Database {
   public: {
@@ -294,6 +296,34 @@ export interface Database {
           },
         ];
       };
+      service_requests: {
+        Row: {
+          id: string;
+          table_id: string;
+          type: ServiceRequestType;
+          status: ServiceRequestStatus;
+          created_at: string;
+          acknowledged_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          table_id: string;
+          type: ServiceRequestType;
+          status?: ServiceRequestStatus;
+          created_at?: string;
+          acknowledged_at?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['service_requests']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'service_requests_table_id_fkey';
+            columns: ['table_id'];
+            isOneToOne: false;
+            referencedRelation: 'tables';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -306,6 +336,8 @@ export interface Database {
       order_status: OrderStatus;
       admin_role: AdminRole;
       dietary_type: DietaryType;
+      service_request_type: ServiceRequestType;
+      service_request_status: ServiceRequestStatus;
     };
     CompositeTypes: Record<string, never>;
   };

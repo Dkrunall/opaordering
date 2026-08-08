@@ -212,3 +212,15 @@ export function StarIcon({ filled = true, ...props }: SVGProps<SVGSVGElement> & 
     </svg>
   );
 }
+
+/** Concierge/service bell — used for "Call Waiter", kept visually distinct
+ *  from BellIcon (which means "your order is ready" everywhere else). */
+export function ConciergeBellIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 17a8 8 0 0 1 16 0" />
+      <path strokeLinecap="round" d="M3 17h18M11 4.5v-1.3M9.3 3.2h3.4" />
+      <circle cx="18.5" cy="17" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

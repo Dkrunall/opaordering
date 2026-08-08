@@ -55,3 +55,48 @@ export async function getOrderForTable(orderId: string, tableNumber: number): Pr
     })),
   };
 }
+
+// A physical table (`table_id`) is reused across completely unrelated
+// dining parties over days/weeks — there's no "checkout" step in this
+// schema that would let us know a party has left. So "this table's running
+// total" can't just sum every order ever placed at table_number=N; that
+// would silently merge in a previous customer's bill from hours or days
+// earlier. Absent a real session/seating concept, we approximate "this
+// dining session" as an unbroken run of orders with no gap longer than
+// SESSION_GAP_MS between consecutive orders, walking back from the most
+// recent order. A multi-hour idle gap is a reasonably reliable signal the
+// table turned over. This is a heuristic, not a guarantee.
+const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
+
+export interface TableRunningTotal {
+  totalAmount: number;
+  orderCount: number;
+}
+
+/** Used by the customer status screen's optional "running total" display. */
+export async function getTableRunningTotal(tableNumber: number): Promise<TableRunningTotal> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, created_at, tables!inner(table_number), order_items(quantity, price_at_order)')
+    .eq('tables.table_number', tableNumber)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+
+  let totalAmount = 0;
+  let orderCount = 0;
+  let cursor: number | null = null;
+
+  for (const order of data ?? []) {
+    const createdAt = new Date(order.created_at).getTime();
+    if (cursor !== null && cursor - createdAt > SESSION_GAP_MS) break;
+    cursor = createdAt;
+    orderCount += 1;
+    for (const item of order.order_items ?? []) {
+      totalAmount += Number(item.price_at_order) * item.quantity;
+    }
+  }
+
+  return { totalAmount, orderCount };
+}

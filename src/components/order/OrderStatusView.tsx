@@ -12,7 +12,8 @@ import {
 } from '@/lib/alerts';
 import { BellIcon, BellOffIcon, ClipboardIcon, PotIcon, SparkleIcon } from '@/components/icons';
 import { OrderFeedbackForm } from './OrderFeedbackForm';
-import type { OrderView } from '@/lib/data/orders';
+import { ServiceRequestButtons } from './ServiceRequestButtons';
+import type { OrderView, TableRunningTotal } from '@/lib/data/orders';
 import type { OrderStatus } from '@/types/database';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -59,9 +60,11 @@ function StatusStepper({ status }: { status: OrderStatus }) {
 export function OrderStatusView({
   initialOrder,
   hasFeedback = false,
+  runningTotal,
 }: {
   initialOrder: OrderView;
   hasFeedback?: boolean;
+  runningTotal?: TableRunningTotal;
 }) {
   const [order, setOrder] = useState(initialOrder);
   const statusRef = useRef(order.status);
@@ -185,6 +188,9 @@ export function OrderStatusView({
         </div>
       </div>
 
+      {/* Call Waiter / Request Bill */}
+      <ServiceRequestButtons tableNumber={order.tableNumber} />
+
       {/* Order receipt details */}
       <div className="rounded-3xl border border-amber-500/20 bg-[#161310] p-5 space-y-4 shadow-xl">
         <div className="flex items-center justify-between border-b border-amber-900/30 pb-3">
@@ -217,6 +223,15 @@ export function OrderStatusView({
           <span>Total Paid / Due</span>
           <span className="text-amber-400 text-xl font-black">{formatPrice(total)}</span>
         </div>
+
+        {runningTotal && runningTotal.orderCount > 1 ? (
+          <div className="flex items-center justify-between border-t border-amber-900/30 pt-3 text-xs">
+            <span className="text-amber-200/60 font-semibold">
+              Table {order.tableNumber} total so far ({runningTotal.orderCount} orders)
+            </span>
+            <span className="font-black text-amber-200">{formatPrice(runningTotal.totalAmount)}</span>
+          </div>
+        ) : null}
       </div>
 
       {order.status === 'served' && !hasFeedback ? <OrderFeedbackForm orderId={order.id} /> : null}
