@@ -12,6 +12,7 @@ import {
   MocktailIcon,
   PlateIcon,
 } from '@/components/icons';
+import { isValidImageSrc } from '@/lib/imageUrl';
 import type { ComponentType, SVGProps } from 'react';
 
 const SECTION_ICON: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -29,11 +30,11 @@ const SECTION_ICON: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
  *  dish/drink's, since most items don't have one but many categories do. */
 function representativeImage(section: MenuSection): string | null {
   for (const cat of section.categories) {
-    if (cat.imageUrl) return cat.imageUrl;
+    if (isValidImageSrc(cat.imageUrl)) return cat.imageUrl;
   }
   for (const cat of section.categories) {
     for (const item of cat.items) {
-      if (item.imageUrl) return item.imageUrl;
+      if (isValidImageSrc(item.imageUrl)) return item.imageUrl;
     }
   }
   return null;

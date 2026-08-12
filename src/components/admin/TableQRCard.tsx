@@ -42,7 +42,7 @@ export function TableQRCard({ table }: { table: AdminTable }) {
   }
 
   return (
-    <div className={`flex flex-col items-center gap-3 rounded-2xl border p-4 shadow-lg transition-all ${
+    <div className={`flex flex-col items-center gap-2 sm:gap-3 rounded-2xl border p-3 sm:p-4 shadow-lg transition-all ${
       !table.isActive
         ? 'opacity-40 border-amber-900/20 bg-black/20'
         : 'border-amber-500/20 bg-[#161310] hover:border-amber-500/40'
@@ -53,12 +53,16 @@ export function TableQRCard({ table }: { table: AdminTable }) {
       </div>
 
       {dataUrl ? (
-        <div className="p-2 rounded-xl bg-white shadow-md border border-amber-500/30">
+        <div className="p-1.5 sm:p-2 rounded-xl bg-white shadow-md border border-amber-500/30">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={dataUrl} alt={`QR code for table ${table.tableNumber}`} className="h-28 w-28 object-contain" />
+          <img
+            src={dataUrl}
+            alt={`QR code for table ${table.tableNumber}`}
+            className="h-20 w-20 sm:h-28 sm:w-28 object-contain"
+          />
         </div>
       ) : (
-        <div className="h-28 w-28 animate-pulse rounded-xl bg-amber-950/40 border border-amber-900/30" />
+        <div className="h-20 w-20 sm:h-28 sm:w-28 animate-pulse rounded-xl bg-amber-950/40 border border-amber-900/30" />
       )}
 
       <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1 text-xs font-semibold">

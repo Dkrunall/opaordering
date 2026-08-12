@@ -56,8 +56,8 @@ export function MenuItemAdminRow({ item, categoryId }: { item: MenuItem; categor
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-900/30 bg-[#161310] p-4 shadow-lg transition-all hover:border-amber-500/30">
-      <div className="min-w-0 flex-1 space-y-0.5">
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-900/30 bg-[#161310] p-4 shadow-lg transition-all hover:border-amber-500/30">
+      <div className="min-w-0 basis-full sm:flex-1 space-y-0.5">
         <p className="truncate font-bold text-amber-50 text-base">{item.name}</p>
         <p className="text-xs font-semibold text-amber-400">
           {item.variants.length > 0
@@ -65,7 +65,7 @@ export function MenuItemAdminRow({ item, categoryId }: { item: MenuItem; categor
             : formatPrice(item.price)}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-2.5">
+      <div className="flex shrink-0 items-center gap-2.5 ml-auto">
         <button
           type="button"
           onClick={handleToggleAvailability}

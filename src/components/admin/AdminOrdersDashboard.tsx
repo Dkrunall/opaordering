@@ -388,27 +388,44 @@ export function AdminOrdersDashboard({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {groups.map((group) => (
-            <div key={group.tableNumber} className="rounded-3xl border border-amber-500/20 bg-gradient-to-b from-[#1c1814] to-[#12100d] p-4 space-y-3 shadow-xl transition-colors hover:border-amber-500/35">
-              <div className="flex items-center justify-between border-b border-amber-900/30 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
-                  <h2 className="text-base font-black text-amber-300">
-                    Table {group.tableNumber}
-                  </h2>
+          {groups.map((group) => {
+            const totalOrders = group.sittings.reduce((n, s) => n + s.length, 0);
+            const hasMultipleSittings = group.sittings.length > 1;
+            return (
+              <div key={group.tableNumber} className="rounded-3xl border border-amber-500/20 bg-gradient-to-b from-[#1c1814] to-[#12100d] p-4 space-y-3 shadow-xl transition-colors hover:border-amber-500/35">
+                <div className="flex items-center justify-between border-b border-amber-900/30 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <h2 className="text-base font-black text-amber-300">
+                      Table {group.tableNumber}
+                    </h2>
+                  </div>
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-200">
+                    {totalOrders} order{totalOrders === 1 ? '' : 's'}
+                  </span>
                 </div>
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-200">
-                  {group.orders.length} order{group.orders.length === 1 ? '' : 's'}
-                </span>
-              </div>
 
-              <div className="space-y-3">
-                {group.orders.map((order) => (
-                  <OrderCard key={order.id} order={order} soundOn={soundOn} />
-                ))}
+                <div className="space-y-4">
+                  {group.sittings.map((sitting, i) => (
+                    <div key={sitting[0]?.id ?? i} className="space-y-3">
+                      {hasMultipleSittings ? (
+                        <div className="flex items-center gap-2">
+                          <span className="h-px flex-1 bg-amber-900/30" />
+                          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-300">
+                            Sitting {i + 1}
+                          </span>
+                          <span className="h-px flex-1 bg-amber-900/30" />
+                        </div>
+                      ) : null}
+                      {sitting.map((order) => (
+                        <OrderCard key={order.id} order={order} soundOn={soundOn} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -85,7 +85,7 @@ export function TablesManager({ tables }: { tables: AdminTable[] }) {
           <p className="text-xs text-amber-200/60">Generate dining tables above to create table QR codes.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {tables.map((table) => (
             <TableQRCard key={table.id} table={table} />
           ))}

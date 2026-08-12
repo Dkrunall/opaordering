@@ -13,22 +13,24 @@ function CartBar({ tableNumber }: { tableNumber: number }) {
     <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:pb-4 pointer-events-none flex justify-center">
       <Link
         href={`/order/cart?table=${tableNumber}`}
-        className="pointer-events-auto w-full max-w-lg flex items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3.5 text-black font-extrabold shadow-2xl shadow-amber-500/30 transition-all hover:scale-[1.01] active:scale-[0.99] border border-amber-300/40 backdrop-blur-lg gold-glow"
+        className="pointer-events-auto w-full max-w-lg flex items-center justify-between gap-2 sm:gap-4 rounded-3xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-3.5 sm:px-5 py-3.5 text-black font-extrabold shadow-2xl shadow-amber-500/30 transition-all hover:scale-[1.01] active:scale-[0.99] border border-amber-300/40 backdrop-blur-lg gold-glow"
       >
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-amber-300 text-xs font-black shadow-inner">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-amber-300 text-xs font-black shadow-inner">
             {totalItems}
           </span>
-          <div className="flex flex-col">
-            <span className="text-xs font-black uppercase tracking-wider text-black/70">Order Summary</span>
-            <span className="text-sm font-black text-black tracking-tight">
+          <div className="flex min-w-0 flex-col">
+            <span className="whitespace-nowrap text-[11px] sm:text-xs font-black uppercase tracking-wide sm:tracking-wider text-black/70">
+              Order Summary
+            </span>
+            <span className="whitespace-nowrap text-sm font-black text-black tracking-tight">
               {formatPrice(totalPrice)}
             </span>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2 rounded-2xl bg-black px-4 py-2 text-xs font-extrabold text-amber-300 shadow-md">
-          <span>Review &amp; Pay</span>
+
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-2xl bg-black px-3 sm:px-4 py-2 text-xs font-extrabold text-amber-300 shadow-md">
+          <span className="whitespace-nowrap">Review &amp; Pay</span>
           <span className="text-base">→</span>
         </div>
       </Link>

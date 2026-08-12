@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { groupIntoSittings } from '@/lib/sittings';
 import type { Database, OrderStatus } from '@/types/database';
 
 export interface AdminOrderItem {
@@ -53,9 +54,18 @@ export async function fetchActiveOrders(supabase: SupabaseClient<Database>): Pro
   }));
 }
 
-/** Groups an already time-sorted order list by table, preserving group order
- *  (i.e. tables with the longest-waiting order come first). */
-export function groupOrdersByTable(orders: AdminOrder[]): { tableNumber: number; orders: AdminOrder[] }[] {
+export interface TableGroup {
+  tableNumber: number;
+  /** This table's active orders split into sittings (see lib/sittings.ts)
+   *  — usually just one, but a table that ordered, went quiet for 90+
+   *  minutes, then ordered again shows as two, oldest sitting first. */
+  sittings: AdminOrder[][];
+}
+
+/** Groups an already time-sorted order list by table (preserving group
+ *  order — tables with the longest-waiting order come first), then splits
+ *  each table's orders into sittings. */
+export function groupOrdersByTable(orders: AdminOrder[]): TableGroup[] {
   const order: number[] = [];
   const byTable = new Map<number, AdminOrder[]>();
   for (const o of orders) {
@@ -65,5 +75,8 @@ export function groupOrdersByTable(orders: AdminOrder[]): { tableNumber: number;
     }
     byTable.get(o.tableNumber)!.push(o);
   }
-  return order.map((tableNumber) => ({ tableNumber, orders: byTable.get(tableNumber)! }));
+  return order.map((tableNumber) => ({
+    tableNumber,
+    sittings: groupIntoSittings(byTable.get(tableNumber)!, (o) => new Date(o.createdAt).getTime()),
+  }));
 }
