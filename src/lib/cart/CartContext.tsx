@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useRefetchOnFocus } from '@/lib/useRefetchOnFocus';
 import type { Database } from '@/types/database';
 
 export interface CartLine {
@@ -165,46 +166,95 @@ export function CartProvider({
     };
   }, [tableNumber]);
 
-  const addLine = useCallback<CartContextValue['addLine']>(
-    (input) => {
-      if (!identity || !tableIdRef.current) return;
-      const supabase = createClient();
-      const existing = lines.find(
-        (l) =>
-          l.guestId === identity.guestId &&
-          l.menuItemId === input.menuItemId &&
-          l.variantId === input.variantId &&
-          l.notes === input.notes
-      );
+  // Belt-and-suspenders for the realtime subscription above: mobile
+  // browsers suspend a backgrounded tab's websocket, and Realtime doesn't
+  // replay events missed while it was down. A guest who adds something,
+  // locks their phone, then comes back could otherwise be looking at a
+  // cart that's missing whatever another guest at the table added in the
+  // meantime — this forces a resync the moment the page is looked at again.
+  const refetchCart = useCallback(async () => {
+    if (!tableIdRef.current) return;
+    const supabase = createClient();
+    try {
+      const { data: rows, error } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('table_id', tableIdRef.current)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setLines((rows ?? []).map(rowToLine));
+    } catch (err) {
+      console.error('Failed to refresh cart:', err);
+    }
+  }, []);
+  useRefetchOnFocus(refetchCart);
 
-      if (existing) {
-        const nextQuantity = existing.quantity + input.quantity;
-        setLines((prev) => prev.map((l) => (l.id === existing.id ? { ...l, quantity: nextQuantity } : l)));
-        supabase.from('cart_items').update({ quantity: nextQuantity, updated_at: new Date().toISOString() }).eq('id', existing.id).then();
+  const addLine = useCallback(
+    (input: Omit<CartLine, 'id' | 'quantity' | 'guestId' | 'guestName'> & { quantity: number }) => {
+      if (!identity) return;
+      const currentIdentity = identity;
+
+      function performInsert() {
+        const supabase = createClient();
+        const existing = lines.find(
+          (l) =>
+            l.guestId === currentIdentity.guestId &&
+            l.menuItemId === input.menuItemId &&
+            l.variantId === input.variantId &&
+            l.notes === input.notes
+        );
+
+        if (existing) {
+          const nextQuantity = existing.quantity + input.quantity;
+          setLines((prev) => prev.map((l) => (l.id === existing.id ? { ...l, quantity: nextQuantity } : l)));
+          supabase.from('cart_items').update({ quantity: nextQuantity, updated_at: new Date().toISOString() }).eq('id', existing.id).then();
+          return;
+        }
+
+        const id = crypto.randomUUID();
+        const newLine: CartLine = { ...input, id, guestId: currentIdentity.guestId, guestName: currentIdentity.guestName };
+        setLines((prev) => [...prev, newLine]);
+        supabase
+          .from('cart_items')
+          .insert({
+            id,
+            table_id: tableIdRef.current!,
+            guest_id: currentIdentity.guestId,
+            guest_name: currentIdentity.guestName,
+            menu_item_id: input.menuItemId,
+            menu_item_name: input.menuItemName,
+            category_name: input.categoryName,
+            variant_id: input.variantId,
+            variant_label: input.variantLabel,
+            unit_price: input.unitPrice,
+            quantity: input.quantity,
+            notes: input.notes,
+            image_url: input.imageUrl,
+          })
+          .then();
+      }
+
+      if (tableIdRef.current) {
+        performInsert();
         return;
       }
 
-      const id = crypto.randomUUID();
-      const newLine: CartLine = { ...input, id, guestId: identity.guestId, guestName: identity.guestName };
-      setLines((prev) => [...prev, newLine]);
-      supabase
-        .from('cart_items')
-        .insert({
-          id,
-          table_id: tableIdRef.current,
-          guest_id: identity.guestId,
-          guest_name: identity.guestName,
-          menu_item_id: input.menuItemId,
-          menu_item_name: input.menuItemName,
-          category_name: input.categoryName,
-          variant_id: input.variantId,
-          variant_label: input.variantLabel,
-          unit_price: input.unitPrice,
-          quantity: input.quantity,
-          notes: input.notes,
-          image_url: input.imageUrl,
-        })
-        .then();
+      // The table/cart lookup (see init() below) hasn't resolved yet —
+      // e.g. a customer tapping "+ Add" within the first instant the menu
+      // opens, before we know which table this is. This used to just
+      // silently drop the tap: the item's "Added" confirmation still
+      // played, but nothing actually joined the cart. Retry briefly
+      // instead; init() finishes almost always within a couple hundred ms.
+      let attempts = 0;
+      const retry = setInterval(() => {
+        attempts += 1;
+        if (tableIdRef.current) {
+          clearInterval(retry);
+          performInsert();
+        } else if (attempts >= 20) {
+          clearInterval(retry);
+        }
+      }, 150);
     },
     [identity, lines]
   );

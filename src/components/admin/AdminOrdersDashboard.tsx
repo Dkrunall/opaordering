@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { fetchActiveOrders, groupOrdersByTable, type AdminOrder } from '@/lib/data/adminOrders';
+import { fetchActiveOrders, groupOrdersByTable, type AdminOrder, type AdminOrderItem } from '@/lib/data/adminOrders';
 import { fetchPendingServiceRequests, type ServiceRequestView } from '@/lib/data/serviceRequests';
-import { updateOrderStatus } from '@/lib/actions/adminOrders';
+import { advanceOrderItems, updateOrderItemStatus } from '@/lib/actions/adminOrders';
 import { acknowledgeServiceRequest } from '@/lib/actions/serviceRequests';
 import { NEXT_STATUS, ORDER_STATUS_LABEL } from '@/lib/orderStatus';
 import { formatPrice } from '@/lib/format';
+import { useRefetchOnFocus } from '@/lib/useRefetchOnFocus';
 import {
   getNotificationPermission,
   isNotificationSupported,
@@ -38,7 +39,44 @@ const STATUS_STYLE: Record<string, string> = {
   placed: 'border-rose-500/30 bg-rose-500/10 text-rose-400',
   preparing: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
   ready: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+  served: 'border-amber-900/30 bg-black/40 text-amber-200/50',
 };
+
+/** Per-item advance control — lets staff move one dish/drink forward
+ *  independently of the rest of the order (a poured drink is done in
+ *  seconds, a plated dish can take 20 minutes). The order's own status
+ *  pill above is a read-only aggregate, kept in sync by a DB trigger. */
+function ItemStatusButton({ item }: { item: AdminOrderItem }) {
+  const [isPending, startTransition] = useTransition();
+  const [localStatus, setLocalStatus] = useOptimistic(item.status);
+  const nextStatus = NEXT_STATUS[localStatus];
+
+  function handleAdvance() {
+    if (!nextStatus) return;
+    startTransition(async () => {
+      setLocalStatus(nextStatus);
+      try {
+        await updateOrderItemStatus(item.id, nextStatus);
+      } catch {
+        // localStatus reverts automatically on failure
+      }
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleAdvance}
+      disabled={isPending || !nextStatus}
+      title={nextStatus ? `Mark ${ORDER_STATUS_LABEL[nextStatus]}` : 'Served'}
+      className={`shrink-0 rounded-lg border px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider transition-all ${
+        STATUS_STYLE[localStatus] ?? ''
+      } ${nextStatus ? 'hover:scale-[1.04] active:scale-95 cursor-pointer' : 'cursor-default opacity-80'} disabled:cursor-wait`}
+    >
+      {isPending ? '…' : ORDER_STATUS_LABEL[localStatus]}
+    </button>
+  );
+}
 
 function OrderCard({ order, soundOn }: { order: AdminOrder; soundOn: boolean }) {
   const [isPending, startTransition] = useTransition();
@@ -69,7 +107,11 @@ function OrderCard({ order, soundOn }: { order: AdminOrder; soundOn: boolean }) 
     startTransition(async () => {
       setLocalStatus(nextStatus);
       try {
-        await updateOrderStatus(order.id, nextStatus);
+        // Bulk convenience for "everything's at the same stage, bump it
+        // all forward" — internally per-item (see advanceOrderItems), so
+        // it can't drift out of sync with the individual item controls
+        // below.
+        await advanceOrderItems(order.id);
       } catch {
         // localStatus reverts automatically on failure
       }
@@ -100,21 +142,24 @@ function OrderCard({ order, soundOn }: { order: AdminOrder; soundOn: boolean }) 
       <ul className="mb-4 space-y-2 border-y border-amber-900/20 py-2.5">
         {order.items.map((item) => (
           <li key={item.id} className="text-xs">
-            <div className="flex items-start justify-between">
-              <span className="font-bold text-amber-50">
-                <span className="text-amber-400 font-extrabold">{item.quantity}×</span> {item.menuItemName}
-              </span>
-              {item.variantLabel ? (
-                <span className="text-[10px] font-semibold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                  {item.variantLabel}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="font-bold text-amber-50">
+                  <span className="text-amber-400 font-extrabold">{item.quantity}×</span> {item.menuItemName}
                 </span>
-              ) : null}
+                {item.variantLabel ? (
+                  <span className="ml-1.5 text-[10px] font-semibold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                    {item.variantLabel}
+                  </span>
+                ) : null}
+                {item.notes ? (
+                  <p className="mt-1 pl-3 text-[11px] text-amber-200/60 italic border-l-2 border-amber-500/40">
+                    &ldquo;{item.notes}&rdquo;
+                  </p>
+                ) : null}
+              </div>
+              <ItemStatusButton item={item} />
             </div>
-            {item.notes ? (
-              <p className="mt-1 pl-3 text-[11px] text-amber-200/60 italic border-l-2 border-amber-500/40">
-                &ldquo;{item.notes}&rdquo;
-              </p>
-            ) : null}
           </li>
         ))}
       </ul>
@@ -310,6 +355,15 @@ export function AdminOrdersDashboard({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         refetch();
       })
+      // Per-item status changes don't always change the parent order's own
+      // (least-advanced-item) status — e.g. marking one of three items
+      // "ready" while the other two are still "preparing" leaves the
+      // order's aggregate status unchanged, so the `orders` subscription
+      // above wouldn't fire. Watch order_items directly too, so every
+      // per-item update from any staff device shows up here live.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
+        refetch();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
         refetchServiceRequests();
       })
@@ -319,6 +373,18 @@ export function AdminOrdersDashboard({
       supabase.removeChannel(channel);
     };
   }, [refetch, refetchServiceRequests]);
+
+  // Belt-and-suspenders for the above: if this tablet/phone was
+  // backgrounded (screen locked, app-switched) for long enough that its
+  // realtime socket got suspended, a status change that happened during
+  // that window would otherwise never arrive — Realtime doesn't replay
+  // missed events on reconnect. Force a resync on refocus.
+  useRefetchOnFocus(
+    useCallback(() => {
+      refetch();
+      refetchServiceRequests();
+    }, [refetch, refetchServiceRequests])
+  );
 
   function handleAcknowledgeRequest(id: string) {
     setServiceRequests((prev) => prev.filter((r) => r.id !== id));
