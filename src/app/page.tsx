@@ -33,6 +33,7 @@ export default function Home() {
             src="/opa-logo.jpg"
             alt="OPA Bar & Cafe"
             fill
+            sizes="(min-width: 640px) 128px, 112px"
             className="object-cover"
             priority
           />

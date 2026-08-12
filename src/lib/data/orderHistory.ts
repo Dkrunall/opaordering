@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
-import type { OrderStatus } from '@/types/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database, OrderStatus } from '@/types/database';
 
 export interface OrderHistoryItem {
   id: string;
@@ -26,9 +26,16 @@ export interface OrderHistoryFilter {
   tableNumber?: number;
 }
 
-export async function getOrderHistory(filter: OrderHistoryFilter): Promise<OrderHistoryEntry[]> {
-  const supabase = await createClient();
-
+/**
+ * Shared between the history page's initial server-side load and its
+ * client-side Realtime refetches, same pattern as fetchActiveOrders — both
+ * pass a Supabase client typed against the same Database, just sourced
+ * differently (cookie-based server client vs. browser client).
+ */
+export async function fetchOrderHistory(
+  supabase: SupabaseClient<Database>,
+  filter: OrderHistoryFilter
+): Promise<OrderHistoryEntry[]> {
   let query = supabase
     .from('orders')
     .select(

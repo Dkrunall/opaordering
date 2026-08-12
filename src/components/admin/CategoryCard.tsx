@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTransition } from 'react';
 import { deleteCategory } from '@/lib/actions/menu';
+import { isValidImageSrc } from '@/lib/imageUrl';
 import { PlateIcon } from '@/components/icons';
 
 export function CategoryCard({
@@ -34,9 +35,9 @@ export function CategoryCard({
   return (
     <div className="group relative rounded-2xl border border-amber-500/20 bg-gradient-to-b from-[#1c1814] to-[#12100d] p-4 shadow-lg transition-all hover:border-amber-500/40">
       <Link href={`/admin/menu/${categoryId}`} className="flex items-center gap-3">
-        {imageUrl ? (
+        {isValidImageSrc(imageUrl) ? (
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-amber-500/30">
-            <Image src={imageUrl} alt={name} fill className="object-cover" />
+            <Image src={imageUrl} alt={name} fill sizes="44px" className="object-cover" />
           </div>
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10">

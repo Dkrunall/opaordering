@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import type { MenuSection } from '@/types/menu';
+import { isValidImageSrc } from '@/lib/imageUrl';
 import { PlateIcon } from '@/components/icons';
 
 /**
@@ -19,10 +20,10 @@ export function SubcategoryRail({
   onSelect: (categoryId: string) => void;
 }) {
   return (
-    <div className="sticky top-[4.75rem] flex max-h-[calc(100vh-6rem)] w-20 shrink-0 flex-col gap-3 overflow-y-auto no-scrollbar pb-4">
+    <div className="sticky top-[4.75rem] flex max-h-[calc(100vh-6rem)] w-16 sm:w-20 shrink-0 flex-col gap-2.5 sm:gap-3 overflow-y-auto no-scrollbar pb-4">
       {categories.map((cat) => {
         const isActive = cat.id === activeCategoryId;
-        const image = cat.imageUrl || cat.items[0]?.imageUrl;
+        const image = [cat.imageUrl, cat.items[0]?.imageUrl].find(isValidImageSrc) ?? null;
         return (
           <button
             key={cat.id}
@@ -31,7 +32,7 @@ export function SubcategoryRail({
             className="flex shrink-0 flex-col items-center gap-1.5"
           >
             <div
-              className={`relative h-16 w-16 overflow-hidden rounded-2xl border-2 shadow-md transition-all ${
+              className={`relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-2xl border-2 shadow-md transition-all ${
                 isActive ? 'border-amber-400 shadow-amber-500/30 scale-105' : 'border-amber-900/30 opacity-80'
               }`}
             >

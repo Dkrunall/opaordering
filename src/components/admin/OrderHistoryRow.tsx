@@ -12,7 +12,7 @@ const STATUS_STYLE: Record<string, string> = {
   served: 'border-amber-900/30 bg-black/40 text-amber-200/50',
 };
 
-export function OrderHistoryRow({ order }: { order: OrderHistoryEntry }) {
+export function OrderHistoryRow({ order, sittingLabel }: { order: OrderHistoryEntry; sittingLabel?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,10 +20,15 @@ export function OrderHistoryRow({ order }: { order: OrderHistoryEntry }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 p-4 text-left"
+        className="flex w-full flex-wrap items-center gap-3 p-4 text-left"
       >
         <div className="flex items-center gap-3 flex-wrap">
           <span className="font-extrabold text-amber-50 text-base">Table {order.tableNumber}</span>
+          {sittingLabel ? (
+            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-300">
+              {sittingLabel}
+            </span>
+          ) : null}
           <span className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${STATUS_STYLE[order.status] ?? ''}`}>
             {ORDER_STATUS_LABEL[order.status]}
           </span>
@@ -31,7 +36,7 @@ export function OrderHistoryRow({ order }: { order: OrderHistoryEntry }) {
             {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           <span className="text-sm font-extrabold text-amber-400">{formatPrice(order.total)}</span>
           <span className="text-xs text-amber-300 font-bold">{open ? '▲' : '▼'}</span>
         </div>

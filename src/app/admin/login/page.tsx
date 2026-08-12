@@ -19,6 +19,7 @@ export default async function AdminLoginPage() {
               src="/opa-logo.jpg"
               alt="OPA Logo"
               fill
+              sizes="80px"
               className="object-cover"
               priority
             />

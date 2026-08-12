@@ -51,6 +51,7 @@ export function HeroVideoHeader({
             src="/opa-logo.jpg"
             alt="OPA Logo"
             fill
+            sizes="(min-width: 640px) 96px, 88px"
             className="object-cover"
             priority
           />
