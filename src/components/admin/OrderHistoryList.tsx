@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchOrderHistory, type OrderHistoryEntry, type OrderHistoryFilter } from '@/lib/data/orderHistory';
 import { groupIntoSittings } from '@/lib/sittings';
+import { useRefetchOnFocus } from '@/lib/useRefetchOnFocus';
 import { OrderHistoryRow } from './OrderHistoryRow';
 import { formatPrice } from '@/lib/format';
 
@@ -50,6 +51,8 @@ export function OrderHistoryList({
       supabase.removeChannel(channel);
     };
   }, [refetch]);
+
+  useRefetchOnFocus(refetch);
 
   // Only label sittings when a single table is in view — across all
   // tables, "Sitting 2" would be ambiguous about which table it's for.

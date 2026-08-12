@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Image from 'next/image';
 import type { MenuItem } from '@/types/menu';
 import { useCart } from '@/lib/cart/CartContext';
@@ -20,6 +20,11 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [justAdded, setJustAdded] = useState(false);
+  // Guards against a double-tap firing handleAdd twice before the panel
+  // collapses (the button that was tapped is otherwise still on-screen
+  // for one more render) — without this a fast double-tap could add the
+  // same line twice instead of once.
+  const isAddingRef = useRef(false);
 
   const hasVariants = item.variants.length > 0;
   const priceLabel = hasVariants
@@ -49,6 +54,11 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
   }
 
   function handleAdd() {
+    if (isAddingRef.current) return;
+    isAddingRef.current = true;
+    setTimeout(() => {
+      isAddingRef.current = false;
+    }, 400);
     if (hasVariants) {
       if (totalVariantQuantity === 0) return;
       for (const v of item.variants) {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useRefetchOnFocus } from '@/lib/useRefetchOnFocus';
 import { formatPrice } from '@/lib/format';
 import {
   getNotificationPermission,
@@ -16,6 +17,12 @@ import { ServiceRequestButtons } from './ServiceRequestButtons';
 import type { OrderView, TableRunningTotal } from '@/lib/data/orders';
 import type { OrderStatus } from '@/types/database';
 import type { ComponentType, SVGProps } from 'react';
+
+// Safety-net poll, on top of the realtime subscription below — catches the
+// rare case where the socket drops without a visibilitychange/focus event
+// firing to trigger the refocus resync (e.g. a flaky mobile connection
+// while the tab stays foregrounded). Stops once the order is served.
+const STATUS_POLL_INTERVAL_MS = 20 * 1000;
 
 const STEPS: { status: OrderStatus; label: string; icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
   { status: 'placed', label: 'Order Placed', icon: ClipboardIcon },
@@ -78,6 +85,25 @@ export function OrderStatusView({
     setNotificationPermission(isNotificationSupported() ? getNotificationPermission() : 'unsupported');
   }, []);
 
+  // Shared by the live subscription below and the refetch fallbacks
+  // (refocus + poll) so a status change is announced (chime/vibrate/
+  // notification) exactly once no matter which path first learns about it.
+  const applyStatusUpdate = useCallback(
+    (next: { status: OrderStatus; served_at: string | null }) => {
+      if (next.status === 'ready' && statusRef.current !== 'ready') {
+        playReadyChime();
+        vibrateIfSupported([200, 100, 200]);
+        showBrowserNotification(
+          'Your order is ready!',
+          `Table ${order.tableNumber} — head to your table, staff is on the way.`
+        );
+      }
+      statusRef.current = next.status;
+      setOrder((prev) => (prev.status === next.status && prev.servedAt === next.served_at ? prev : { ...prev, status: next.status, servedAt: next.served_at }));
+    },
+    [order.tableNumber]
+  );
+
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -86,17 +112,7 @@ export function OrderStatusView({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${order.id}` },
         (payload) => {
-          const next = payload.new as { status: OrderStatus; served_at: string | null };
-          if (next.status === 'ready' && statusRef.current !== 'ready') {
-            playReadyChime();
-            vibrateIfSupported([200, 100, 200]);
-            showBrowserNotification(
-              'Your order is ready!',
-              `Table ${order.tableNumber} — head to your table, staff is on the way.`
-            );
-          }
-          statusRef.current = next.status;
-          setOrder((prev) => ({ ...prev, status: next.status, servedAt: next.served_at }));
+          applyStatusUpdate(payload.new as { status: OrderStatus; served_at: string | null });
         }
       )
       .subscribe();
@@ -104,7 +120,32 @@ export function OrderStatusView({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [order.id, order.tableNumber]);
+  }, [order.id, applyStatusUpdate]);
+
+  // Realtime doesn't replay events missed while this tab's websocket was
+  // suspended — which mobile browsers do aggressively in the background —
+  // so a customer who locks their phone while waiting can come back to a
+  // status screen that's silently stuck on "Preparing" even though the
+  // kitchen marked it ready minutes ago. Resync on refocus, plus a light
+  // poll as a fallback for drops that don't fire a focus/visibility event.
+  const refetchStatus = useCallback(async () => {
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase.from('orders').select('status, served_at').eq('id', order.id).maybeSingle();
+      if (error) throw error;
+      if (data) applyStatusUpdate(data);
+    } catch (err) {
+      console.error('Failed to refresh order status:', err);
+    }
+  }, [order.id, applyStatusUpdate]);
+
+  useRefetchOnFocus(refetchStatus);
+
+  useEffect(() => {
+    if (order.status === 'served') return;
+    const interval = setInterval(refetchStatus, STATUS_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [order.status, refetchStatus]);
 
   const total = order.items.reduce((n, i) => n + i.priceAtOrder * i.quantity, 0);
 

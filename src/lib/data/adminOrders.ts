@@ -9,6 +9,9 @@ export interface AdminOrderItem {
   quantity: number;
   notes: string | null;
   priceAtOrder: number;
+  /** Per-item kitchen status — the order's own `status` is derived from
+   *  these (see 0011_order_item_status.sql), not set directly. */
+  status: OrderStatus;
 }
 
 export interface AdminOrder {
@@ -30,7 +33,7 @@ export async function fetchActiveOrders(supabase: SupabaseClient<Database>): Pro
     .from('orders')
     .select(
       `id, status, created_at, served_at, tables ( table_number ),
-       order_items ( id, quantity, notes, price_at_order, menu_items ( name ), menu_item_variants ( label ) )`
+       order_items ( id, quantity, notes, price_at_order, status, menu_items ( name ), menu_item_variants ( label ) )`
     )
     .neq('status', 'served')
     .order('created_at', { ascending: true });
@@ -50,6 +53,7 @@ export async function fetchActiveOrders(supabase: SupabaseClient<Database>): Pro
       quantity: i.quantity,
       notes: i.notes,
       priceAtOrder: Number(i.price_at_order),
+      status: i.status,
     })),
   }));
 }

@@ -157,6 +157,7 @@ export interface Database {
           quantity: number;
           notes: string | null;
           price_at_order: number;
+          status: OrderStatus;
           created_at: string;
         };
         Insert: {
@@ -167,6 +168,7 @@ export interface Database {
           quantity: number;
           notes?: string | null;
           price_at_order: number;
+          status?: OrderStatus;
           created_at?: string;
         };
         Update: Partial<Database['public']['Tables']['order_items']['Insert']>;
