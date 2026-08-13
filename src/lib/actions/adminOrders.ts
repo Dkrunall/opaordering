@@ -6,17 +6,54 @@ import { NEXT_STATUS } from '@/lib/orderStatus';
 import type { OrderStatus } from '@/types/database';
 
 /** Advances a single order item to the given status. RLS restricts this to
- *  admins. The parent order's own `status` is recomputed automatically by
- *  a DB trigger (see 0011_order_item_status.sql) — this never writes to
- *  `orders` directly. */
+ *  admins, but RLS alone would let any admin session write *any* status to
+ *  the item (skip stages, or move it backward) — the UI only ever offers
+ *  NEXT_STATUS[current], but a stale client, a double-tap on a cached item
+ *  id, or any non-UI caller could otherwise send something else. Reject
+ *  anything but the legal next step, and use the current status as a
+ *  compare-and-swap guard so a second concurrent update (another staff
+ *  device) can't silently clobber this one. The parent order's own
+ *  `status` is recomputed automatically by a DB trigger (see
+ *  0011_order_item_status.sql) — this never writes to `orders` directly. */
 export async function updateOrderItemStatus(orderItemId: string, status: OrderStatus) {
   const supabase = await createClient();
 
-  const { error } = await supabase.from('order_items').update({ status }).eq('id', orderItemId);
+  const { data: item, error: fetchError } = await supabase
+    .from('order_items')
+    .select('status')
+    .eq('id', orderItemId)
+    .maybeSingle();
+  if (fetchError) {
+    console.error('updateOrderItemStatus failed:', fetchError);
+    throw new ActionError('Could not update item status.');
+  }
+  if (!item) throw new ActionError('That item no longer exists.');
+
+  const expectedNext = NEXT_STATUS[item.status];
+  if (status !== expectedNext) {
+    throw new ActionError(
+      item.status === 'served' ? 'That item is already served.' : `That item must go to "${expectedNext}" next.`
+    );
+  }
+
+  const { data: updated, error } = await supabase
+    .from('order_items')
+    .update({ status })
+    .eq('id', orderItemId)
+    .eq('status', item.status)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('updateOrderItemStatus failed:', error);
     throw new ActionError('Could not update item status.');
+  }
+  if (!updated) {
+    // Someone else (another staff device) already changed this item's
+    // status between our read and our write — not a real failure, just
+    // stale local state; the caller's optimistic UI will self-correct on
+    // the next realtime/refocus refetch.
+    throw new ActionError('That item was just updated by someone else — refreshing.');
   }
 }
 

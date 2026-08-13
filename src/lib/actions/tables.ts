@@ -3,11 +3,21 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { ActionError } from '@/lib/actions/errors';
+import { requireManager } from '@/lib/actions/requireManager';
 
 const GENERIC_FAILURE_MESSAGE = 'Something went wrong. Please try again.';
 
+// Same as menu.ts: orders.table_id has no ON DELETE clause (0001_schema.sql),
+// so a table that's ever had an order placed at it can't be hard-deleted.
+const FOREIGN_KEY_VIOLATION = '23503';
+
+function isForeignKeyViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === FOREIGN_KEY_VIOLATION;
+}
+
 async function withSafeErrors<T>(fn: () => Promise<T>): Promise<T> {
   try {
+    await requireManager();
     return await fn();
   } catch (err) {
     if (err instanceof ActionError) throw err;
@@ -59,7 +69,12 @@ export async function deleteTable(id: string) {
   return withSafeErrors(async () => {
     const supabase = await createClient();
     const { error } = await supabase.from('tables').delete().eq('id', id);
-    if (error) throw error;
+    if (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ActionError('This table has order history, so it can\'t be deleted. Deactivate it instead to stop new orders/QR scans without losing past orders.');
+      }
+      throw error;
+    }
     revalidatePath('/admin/tables');
   });
 }

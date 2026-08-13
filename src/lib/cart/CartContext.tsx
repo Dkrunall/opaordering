@@ -22,7 +22,10 @@ export interface CartLine {
 
 interface CartContextValue {
   lines: CartLine[];
-  addLine: (input: Omit<CartLine, 'id' | 'quantity' | 'guestId' | 'guestName'> & { quantity: number }) => void;
+  /** Resolves `true` once the line has actually joined the cart, `false`
+   *  if it gave up (e.g. the cart never finished loading) — callers should
+   *  only show a success confirmation once this resolves `true`. */
+  addLine: (input: Omit<CartLine, 'id' | 'quantity' | 'guestId' | 'guestName'> & { quantity: number }) => Promise<boolean>;
   updateQuantity: (id: string, quantity: number) => void;
   removeLine: (id: string) => void;
   clearCart: () => void;
@@ -190,8 +193,8 @@ export function CartProvider({
   useRefetchOnFocus(refetchCart);
 
   const addLine = useCallback(
-    (input: Omit<CartLine, 'id' | 'quantity' | 'guestId' | 'guestName'> & { quantity: number }) => {
-      if (!identity) return;
+    (input: Omit<CartLine, 'id' | 'quantity' | 'guestId' | 'guestName'> & { quantity: number }): Promise<boolean> => {
+      if (!identity) return Promise.resolve(false);
       const currentIdentity = identity;
 
       function performInsert() {
@@ -236,7 +239,7 @@ export function CartProvider({
 
       if (tableIdRef.current) {
         performInsert();
-        return;
+        return Promise.resolve(true);
       }
 
       // The table/cart lookup (see init() below) hasn't resolved yet —
@@ -245,16 +248,20 @@ export function CartProvider({
       // silently drop the tap: the item's "Added" confirmation still
       // played, but nothing actually joined the cart. Retry briefly
       // instead; init() finishes almost always within a couple hundred ms.
-      let attempts = 0;
-      const retry = setInterval(() => {
-        attempts += 1;
-        if (tableIdRef.current) {
-          clearInterval(retry);
-          performInsert();
-        } else if (attempts >= 20) {
-          clearInterval(retry);
-        }
-      }, 150);
+      return new Promise<boolean>((resolve) => {
+        let attempts = 0;
+        const retry = setInterval(() => {
+          attempts += 1;
+          if (tableIdRef.current) {
+            clearInterval(retry);
+            performInsert();
+            resolve(true);
+          } else if (attempts >= 20) {
+            clearInterval(retry);
+            resolve(false);
+          }
+        }, 150);
+      });
     },
     [identity, lines]
   );

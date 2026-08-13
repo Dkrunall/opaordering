@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCategoryById } from '@/lib/data/menu';
+import { requireManagerOrRedirect } from '@/lib/actions/requireManager';
 import { MenuItemAdminRow } from '@/components/admin/MenuItemAdminRow';
 import { AddItemPanel } from '@/components/admin/AddItemPanel';
 import { EditCategoryPanel } from '@/components/admin/EditCategoryPanel';
@@ -10,6 +11,7 @@ export default async function AdminCategoryPage({
 }: {
   params: Promise<{ categoryId: string }>;
 }) {
+  await requireManagerOrRedirect();
   const { categoryId } = await params;
   const category = await getCategoryById(categoryId);
   if (!category) notFound();

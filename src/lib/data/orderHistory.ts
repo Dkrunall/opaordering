@@ -45,7 +45,14 @@ export async function fetchOrderHistory(
     .order('created_at', { ascending: false });
 
   if (filter.date) {
-    const start = new Date(`${filter.date}T00:00:00.000Z`);
+    // "server's local date" in practice means IST (this is an India-facing
+    // venue — en-IN currency/locale throughout) — India doesn't observe
+    // DST, so a fixed +05:30 offset is always correct, not just an
+    // approximation. Parsing with an explicit offset (rather than a bare
+    // "...Z" UTC-midnight boundary) means an order placed at, say, 1am IST
+    // lands in *that* IST calendar day instead of spilling into the
+    // previous UTC day.
+    const start = new Date(`${filter.date}T00:00:00+05:30`);
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     query = query.gte('created_at', start.toISOString()).lt('created_at', end.toISOString());
   }

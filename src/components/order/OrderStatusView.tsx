@@ -14,7 +14,8 @@ import {
 import { BellIcon, BellOffIcon, ClipboardIcon, PotIcon, SparkleIcon } from '@/components/icons';
 import { OrderFeedbackForm } from './OrderFeedbackForm';
 import { ServiceRequestButtons } from './ServiceRequestButtons';
-import type { OrderView, TableRunningTotal } from '@/lib/data/orders';
+import type { OrderView } from '@/lib/data/orders';
+import { getTableRunningTotal, type TableRunningTotal } from '@/lib/data/tableRunningTotal';
 import type { OrderStatus } from '@/types/database';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -76,6 +77,7 @@ export function OrderStatusView({
   const [order, setOrder] = useState(initialOrder);
   const statusRef = useRef(order.status);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported' | null>(null);
+  const [liveRunningTotal, setLiveRunningTotal] = useState(runningTotal);
 
   // Reflects whatever the customer answered at the "Send Order to Kitchen"
   // prompt (see CartReview.tsx) — this page never asks itself, it only
@@ -139,13 +141,73 @@ export function OrderStatusView({
     }
   }, [order.id, applyStatusUpdate]);
 
-  useRefetchOnFocus(refetchStatus);
+  // The running total ("Table N total so far") was previously fetched once
+  // server-side at page load and never touched again — it kept showing a
+  // stale count/amount if another guest at the table placed a second order
+  // while this screen stayed open, despite everything else on this page
+  // being "live". Refetch it alongside the order status on the same
+  // triggers (refocus, poll, and — since a second order changes this,
+  // not this order's own status — a realtime subscription scoped to every
+  // order at this table, not just this one).
+  const hasRunningTotal = runningTotal !== undefined;
+  const refetchRunningTotal = useCallback(async () => {
+    if (!hasRunningTotal) return;
+    const supabase = createClient();
+    try {
+      const next = await getTableRunningTotal(order.tableNumber, supabase);
+      setLiveRunningTotal(next);
+    } catch (err) {
+      console.error('Failed to refresh table running total:', err);
+    }
+  }, [order.tableNumber, hasRunningTotal]);
+
+  const [tableId, setTableId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hasRunningTotal) return;
+    let cancelled = false;
+    const supabase = createClient();
+    supabase
+      .from('tables')
+      .select('id')
+      .eq('table_number', order.tableNumber)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) setTableId(data.id);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [order.tableNumber, hasRunningTotal]);
+
+  useEffect(() => {
+    if (!tableId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`table-running-total-${tableId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders', filter: `table_id=eq.${tableId}` },
+        () => refetchRunningTotal()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tableId, refetchRunningTotal]);
+
+  const refetchAll = useCallback(() => {
+    refetchStatus();
+    refetchRunningTotal();
+  }, [refetchStatus, refetchRunningTotal]);
+
+  useRefetchOnFocus(refetchAll);
 
   useEffect(() => {
     if (order.status === 'served') return;
-    const interval = setInterval(refetchStatus, STATUS_POLL_INTERVAL_MS);
+    const interval = setInterval(refetchAll, STATUS_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [order.status, refetchStatus]);
+  }, [order.status, refetchAll]);
 
   const total = order.items.reduce((n, i) => n + i.priceAtOrder * i.quantity, 0);
 
@@ -265,12 +327,12 @@ export function OrderStatusView({
           <span className="text-amber-400 text-xl font-black">{formatPrice(total)}</span>
         </div>
 
-        {runningTotal && runningTotal.orderCount > 1 ? (
+        {liveRunningTotal && liveRunningTotal.orderCount > 1 ? (
           <div className="flex items-center justify-between border-t border-amber-900/30 pt-3 text-xs">
             <span className="text-amber-200/60 font-semibold">
-              Table {order.tableNumber} total so far ({runningTotal.orderCount} orders)
+              Table {order.tableNumber} total so far ({liveRunningTotal.orderCount} orders)
             </span>
-            <span className="font-black text-amber-200">{formatPrice(runningTotal.totalAmount)}</span>
+            <span className="font-black text-amber-200">{formatPrice(liveRunningTotal.totalAmount)}</span>
           </div>
         ) : null}
       </div>

@@ -71,15 +71,10 @@ export function CartReview({ tableNumber }: { tableNumber: number }) {
     void requestNotificationPermission();
     startTransition(async () => {
       try {
-        await placeOrder(
-          tableNumber,
-          lines.map((l) => ({
-            menuItemId: l.menuItemId,
-            variantId: l.variantId,
-            quantity: l.quantity,
-            notes: l.notes,
-          }))
-        );
+        // placeOrder reads the table's cart straight from the DB itself
+        // (not from `lines` here) so a line another guest added after this
+        // device's last sync isn't dropped — see lib/actions/orders.ts.
+        await placeOrder(tableNumber);
       } catch (err) {
         unstable_rethrow(err);
         setError(err instanceof Error && err.message ? err.message : 'Something went wrong placing your order. Please try again.');

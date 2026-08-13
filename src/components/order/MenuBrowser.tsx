@@ -17,7 +17,12 @@ import { CloseIcon, PlateIcon, SearchIcon } from '@/components/icons';
 
 function itemMatchesFilter(item: MenuItem, filter: DietFilter): boolean {
   if (filter === 'all') return true;
-  if (item.dietaryType === null) return true;
+  // An untagged item (dietary_type never set in the admin) is of *unknown*
+  // type, not "matches everything" — showing it under "Veg" could put an
+  // actually non-veg dish in front of a vegetarian guest relying on the
+  // filter. Only 'all' shows untagged items; both specific filters hide
+  // them until the data gap is fixed.
+  if (item.dietaryType === null) return false;
   if (filter === 'veg') return item.dietaryType === 'veg';
   return item.dietaryType === 'non_veg' || item.dietaryType === 'egg' || item.dietaryType === 'seafood';
 }

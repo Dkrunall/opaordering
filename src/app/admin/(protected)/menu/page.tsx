@@ -1,8 +1,10 @@
 import { getMenuSections } from '@/lib/data/menu';
+import { requireManagerOrRedirect } from '@/lib/actions/requireManager';
 import { CategoryCard } from '@/components/admin/CategoryCard';
 import { CategoryForm } from '@/components/admin/CategoryForm';
 
 export default async function AdminMenuPage() {
+  await requireManagerOrRedirect();
   const sections = await getMenuSections();
   const totalItems = sections.reduce(
     (n, s) => n + s.categories.reduce((m, c) => m + c.items.length, 0),
