@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { groupIntoSittings } from '@/lib/sittings';
 import type { OrderStatus } from '@/types/database';
 
 export interface OrderItemView {
@@ -57,32 +56,6 @@ export async function getOrderForTable(orderId: string, tableNumber: number): Pr
   };
 }
 
-export interface TableRunningTotal {
-  totalAmount: number;
-  orderCount: number;
-}
-
-/** Used by the customer status screen's optional "running total" display —
- *  scoped to the table's current sitting only (see lib/sittings.ts), not
- *  every order ever placed at this table number. */
-export async function getTableRunningTotal(tableNumber: number): Promise<TableRunningTotal> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('orders')
-    .select('id, created_at, tables!inner(table_number), order_items(quantity, price_at_order)')
-    .eq('tables.table_number', tableNumber);
-  if (error) throw error;
-
-  const sittings = groupIntoSittings(data ?? [], (o) => new Date(o.created_at).getTime());
-  const currentSitting = sittings[sittings.length - 1] ?? [];
-
-  let totalAmount = 0;
-  for (const order of currentSitting) {
-    for (const item of order.order_items ?? []) {
-      totalAmount += Number(item.price_at_order) * item.quantity;
-    }
-  }
-
-  return { totalAmount, orderCount: currentSitting.length };
-}
+// getTableRunningTotal moved to lib/data/tableRunningTotal.ts — it has no
+// server-only imports (unlike this file, via createClient), so it can be
+// value-imported from client components for live refetching.

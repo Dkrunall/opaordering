@@ -1,7 +1,9 @@
 import { getAllTables } from '@/lib/data/adminTables';
+import { requireManagerOrRedirect } from '@/lib/actions/requireManager';
 import { TablesManager } from '@/components/admin/TablesManager';
 
 export default async function AdminTablesPage() {
+  await requireManagerOrRedirect();
   const tables = await getAllTables();
 
   return (

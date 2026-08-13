@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { OrderShell } from '@/components/order/OrderShell';
 import { OrderMessage } from '@/components/order/OrderMessage';
 import { OrderStatusView } from '@/components/order/OrderStatusView';
-import { getOrderForTable, getTableRunningTotal } from '@/lib/data/orders';
+import { getOrderForTable } from '@/lib/data/orders';
+import { getTableRunningTotal } from '@/lib/data/tableRunningTotal';
 import { getFeedbackForOrder } from '@/lib/data/feedback';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function OrderStatusPage({
   searchParams,
@@ -33,7 +35,8 @@ export default async function OrderStatusPage({
   }
 
   const feedback = order.status === 'served' ? await getFeedbackForOrder(order.id) : null;
-  const runningTotal = await getTableRunningTotal(tableNumber);
+  const supabase = await createClient();
+  const runningTotal = await getTableRunningTotal(tableNumber, supabase);
 
   return (
     <OrderShell tableNumber={tableNumber} title="Order status" showCartBar={false}>

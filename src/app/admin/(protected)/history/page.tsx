@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { fetchOrderHistory } from '@/lib/data/orderHistory';
+import { requireManagerOrRedirect } from '@/lib/actions/requireManager';
 import { OrderHistoryList } from '@/components/admin/OrderHistoryList';
 
 export default async function AdminHistoryPage({
@@ -7,6 +8,7 @@ export default async function AdminHistoryPage({
 }: {
   searchParams: Promise<{ date?: string; table?: string }>;
 }) {
+  await requireManagerOrRedirect();
   const { date, table } = await searchParams;
   const tableNumber = table ? Number(table) : undefined;
   const filter = {

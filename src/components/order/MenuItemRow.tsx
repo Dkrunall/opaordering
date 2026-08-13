@@ -1,13 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import type { MenuItem } from '@/types/menu';
 import { useCart } from '@/lib/cart/CartContext';
 import { formatPrice } from '@/lib/format';
 import { AlcoholicBadge, DietaryBadge } from './DietaryBadge';
 import { isValidImageSrc } from '@/lib/imageUrl';
-import { CheckIcon } from '@/components/icons';
+import { CheckIcon, WarningIcon } from '@/components/icons';
 
 export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryName: string }) {
   const { addLine } = useCart();
@@ -20,11 +20,13 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [justAdded, setJustAdded] = useState(false);
-  // Guards against a double-tap firing handleAdd twice before the panel
-  // collapses (the button that was tapped is otherwise still on-screen
-  // for one more render) — without this a fast double-tap could add the
-  // same line twice instead of once.
-  const isAddingRef = useRef(false);
+  // Drives both the button's disabled state (guards a double-tap firing
+  // handleAdd twice — the button is otherwise still on-screen for one more
+  // render before the panel collapses) and whether the "Added" confirmation
+  // is honest: it only fires once addLine has actually resolved, not just
+  // been called, so a failed/timed-out add no longer claims success.
+  const [isAdding, setIsAdding] = useState(false);
+  const [addFailed, setAddFailed] = useState(false);
 
   const hasVariants = item.variants.length > 0;
   const priceLabel = hasVariants
@@ -53,18 +55,21 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
     setTimeout(() => setJustAdded(false), 1600);
   }
 
-  function handleAdd() {
-    if (isAddingRef.current) return;
-    isAddingRef.current = true;
-    setTimeout(() => {
-      isAddingRef.current = false;
-    }, 400);
+  async function handleAdd() {
+    if (isAdding) return;
+    setIsAdding(true);
+    setAddFailed(false);
+
+    let ok = true;
     if (hasVariants) {
-      if (totalVariantQuantity === 0) return;
+      if (totalVariantQuantity === 0) {
+        setIsAdding(false);
+        return;
+      }
       for (const v of item.variants) {
         const qty = variantQty(v.id);
         if (qty === 0) continue;
-        addLine({
+        const added = await addLine({
           menuItemId: item.id,
           menuItemName: item.name,
           categoryName,
@@ -75,9 +80,10 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
           notes,
           imageUrl: item.imageUrl,
         });
+        ok = ok && added;
       }
     } else {
-      addLine({
+      ok = await addLine({
         menuItemId: item.id,
         menuItemName: item.name,
         categoryName,
@@ -89,7 +95,17 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
         imageUrl: item.imageUrl,
       });
     }
-    resetAndCollapse();
+
+    setIsAdding(false);
+    if (ok) {
+      resetAndCollapse();
+    } else {
+      // The cart never finished loading (see CartContext.addLine) — don't
+      // claim success, keep the panel open with the customer's selections
+      // intact so they can just try again once their connection catches up.
+      setAddFailed(true);
+      setTimeout(() => setAddFailed(false), 3000);
+    }
   }
 
   return (
@@ -212,14 +228,21 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
             />
           </div>
 
+          {addFailed ? (
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-rose-400">
+              <WarningIcon className="h-3.5 w-3.5 shrink-0" />
+              Couldn&rsquo;t add — check your connection and try again.
+            </p>
+          ) : null}
+
           {hasVariants ? (
             <button
               type="button"
               onClick={handleAdd}
-              disabled={totalVariantQuantity === 0}
+              disabled={totalVariantQuantity === 0 || isAdding}
               className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3 text-xs font-black text-black shadow-lg shadow-amber-500/25 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
             >
-              <span>Add to Order</span>
+              <span>{isAdding ? 'Adding…' : 'Add to Order'}</span>
               <span>·</span>
               <span>{totalVariantQuantity > 0 ? formatPrice(totalVariantPrice) : `${item.variants.length} options`}</span>
             </button>
@@ -248,9 +271,10 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
               <button
                 type="button"
                 onClick={handleAdd}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3 text-xs font-black text-black shadow-lg shadow-amber-500/25 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                disabled={isAdding}
+                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3 text-xs font-black text-black shadow-lg shadow-amber-500/25 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:brightness-100"
               >
-                <span>Add to Order</span>
+                <span>{isAdding ? 'Adding…' : 'Add to Order'}</span>
                 <span>·</span>
                 <span>{formatPrice(item.price * quantity)}</span>
               </button>

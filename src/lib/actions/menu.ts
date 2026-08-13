@@ -3,12 +3,24 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { ActionError } from '@/lib/actions/errors';
+import { requireManager } from '@/lib/actions/requireManager';
 import type { DietaryType } from '@/types/database';
 
 const GENERIC_FAILURE_MESSAGE = 'Something went wrong saving your changes. Please try again.';
 
+// Postgres SQLSTATE for a foreign-key violation, e.g. deleting a category/
+// item/variant that order_items still references (order_items has no ON
+// DELETE clause on purpose — see 0001_schema.sql — so order history never
+// silently loses its line items).
+const FOREIGN_KEY_VIOLATION = '23503';
+
+function isForeignKeyViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === FOREIGN_KEY_VIOLATION;
+}
+
 async function withSafeErrors<T>(fn: () => Promise<T>): Promise<T> {
   try {
+    await requireManager();
     return await fn();
   } catch (err) {
     if (err instanceof ActionError) throw err;
@@ -64,9 +76,18 @@ export async function updateCategory(id: string, input: CategoryInput) {
 export async function deleteCategory(id: string) {
   return withSafeErrors(async () => {
     const supabase = await createClient();
-    // Cascades to menu_items -> menu_item_variants (on delete cascade).
+    // Cascades to menu_items -> menu_item_variants (on delete cascade) —
+    // but only as far as order_items lets it: any item in this category
+    // that's ever been ordered blocks the whole delete (FK RESTRICT).
     const { error } = await supabase.from('categories').delete().eq('id', id);
-    if (error) throw error;
+    if (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ActionError(
+          "Can't delete this category — one or more of its items have already been ordered, and order history needs to keep referencing them. Mark those items \"Sold Out\" instead, or delete only the items that were never ordered."
+        );
+      }
+      throw error;
+    }
     revalidatePath('/admin/menu');
     revalidatePath('/order');
   });
@@ -163,9 +184,18 @@ export async function updateMenuItem(id: string, input: MenuItemInput) {
 
     // Replace-all is simplest and safe here: variants have no independent
     // identity customers reference elsewhere (order_items snapshots the
-    // price at order time), so there's nothing to preserve across an edit.
+    // price at order time) — *except* order_items.variant_id itself, which
+    // still points at the row (FK RESTRICT, no ON DELETE clause), so a
+    // variant that's ever been ordered can't be deleted this way.
     const { error: deleteError } = await supabase.from('menu_item_variants').delete().eq('menu_item_id', id);
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      if (isForeignKeyViolation(deleteError)) {
+        throw new ActionError(
+          "Can't update this item's serving sizes — one of the existing ones has already been ordered, and order history needs to keep referencing it. Mark this item \"Sold Out\" and add a replacement item instead."
+        );
+      }
+      throw deleteError;
+    }
 
     if (input.variants.length > 0) {
       const { error: insertError } = await supabase.from('menu_item_variants').insert(
@@ -188,7 +218,12 @@ export async function deleteMenuItem(id: string) {
   return withSafeErrors(async () => {
     const supabase = await createClient();
     const { error } = await supabase.from('menu_items').delete().eq('id', id);
-    if (error) throw error;
+    if (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ActionError('This item has already been ordered, so it can\'t be deleted — order history needs to keep referencing it. Mark it "Sold Out" instead to take it off the menu.');
+      }
+      throw error;
+    }
     revalidatePath('/admin/menu');
     revalidatePath('/order');
   });
