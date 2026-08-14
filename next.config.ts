@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
     // up an unrelated package-lock.json from a parent directory.
     root: __dirname,
   },
+  experimental: {
+    // Turbopack's persistent build cache (.next/cache/turbopack) is on by
+    // default as of Next 16.3.0. On Vercel that cache is restored between
+    // deployments, and a stale entry produced a "module not found" build
+    // failure for a generated next/font/google CSS module. Vercel's own
+    // per-deploy build isolation makes the cache-hit speedup marginal here,
+    // so it's disabled to avoid that class of failure.
+    turbopackFileSystemCacheForBuild: false,
+  },
   images: {
     remotePatterns: [
       // Menu item images extracted from the venue's Zillout listing.
