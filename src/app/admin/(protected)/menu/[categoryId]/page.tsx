@@ -19,9 +19,13 @@ export default async function AdminCategoryPage({
   const nextSortOrder = category.items.length > 0 ? Math.max(...category.items.map((i) => i.sortOrder)) + 1 : 0;
 
   return (
-    <div className="space-y-4">
-      <Link href="/admin/menu" className="text-sm text-muted">
-        ← All categories
+    <div className="space-y-6">
+      <Link
+        href="/admin/menu"
+        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all shadow-sm"
+      >
+        <span>←</span>
+        <span>Back to All Categories</span>
       </Link>
 
       <EditCategoryPanel
@@ -34,11 +38,20 @@ export default async function AdminCategoryPage({
         }}
       />
 
-      <div className="space-y-2">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold tracking-widest text-zinc-400 uppercase">Items in this Category</h2>
+          <span className="text-xs font-semibold text-zinc-500">{category.items.length} items</span>
+        </div>
+
         {category.items.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted">No items in this category yet.</p>
+          <div className="rounded-2xl border border-white/10 bg-[#121215] p-8 text-center">
+            <p className="text-sm font-medium text-zinc-400">No items in this category yet.</p>
+          </div>
         ) : (
-          category.items.map((item) => <MenuItemAdminRow key={item.id} item={item} categoryId={category.id} />)
+          <div className="space-y-2.5">
+            {category.items.map((item) => <MenuItemAdminRow key={item.id} item={item} categoryId={category.id} />)}
+          </div>
         )}
       </div>
 

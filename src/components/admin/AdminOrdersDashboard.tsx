@@ -36,10 +36,10 @@ function timeAgo(iso: string): string {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  placed: 'border-rose-500/30 bg-rose-500/10 text-rose-400',
-  preparing: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-  ready: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-  served: 'border-amber-900/30 bg-black/40 text-amber-200/50',
+  placed: 'border-rose-500/40 bg-rose-500/10 text-rose-300',
+  preparing: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
+  ready: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
+  served: 'border-white/10 bg-zinc-900 text-zinc-500',
 };
 
 /** Per-item advance control — lets staff move one dish/drink forward
@@ -69,9 +69,8 @@ function ItemStatusButton({ item }: { item: AdminOrderItem }) {
       onClick={handleAdvance}
       disabled={isPending || !nextStatus}
       title={nextStatus ? `Mark ${ORDER_STATUS_LABEL[nextStatus]}` : 'Served'}
-      className={`shrink-0 rounded-lg border px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider transition-all ${
-        STATUS_STYLE[localStatus] ?? ''
-      } ${nextStatus ? 'hover:scale-[1.04] active:scale-95 cursor-pointer' : 'cursor-default opacity-80'} disabled:cursor-wait`}
+      className={`shrink-0 rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${STATUS_STYLE[localStatus] ?? ''
+        } ${nextStatus ? 'hover:scale-[1.03] active:scale-95 cursor-pointer' : 'cursor-default opacity-80'} disabled:cursor-wait`}
     >
       {isPending ? '…' : ORDER_STATUS_LABEL[localStatus]}
     </button>
@@ -120,40 +119,39 @@ function OrderCard({ order, soundOn }: { order: AdminOrder; soundOn: boolean }) 
 
   return (
     <div
-      className={`overflow-hidden rounded-2xl border p-4 transition-all shadow-lg ${
-        isStale
-          ? 'border-rose-500 bg-rose-950/20 ring-2 ring-rose-500/40 animate-pulse'
-          : 'border-amber-900/30 bg-[#171411] hover:border-amber-500/30'
-      }`}
+      className={`overflow-hidden rounded-2xl border p-4 transition-all shadow-lg ${isStale
+          ? 'border-rose-500/80 bg-rose-950/20 ring-2 ring-rose-500/40 animate-pulse'
+          : 'border-white/10 bg-[#121215] hover:border-white/20'
+        }`}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className={`rounded-lg border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${STATUS_STYLE[localStatus] ?? ''}`}>
+        <span className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLE[localStatus] ?? ''}`}>
           {ORDER_STATUS_LABEL[localStatus]}
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-amber-200/30">#{order.id.slice(0, 6)}</span>
-          <span className={`flex items-center gap-1 text-xs font-semibold ${isStale ? 'text-rose-400' : 'text-amber-200/50'}`}>
+          <span className="text-[10px] font-semibold text-zinc-500">#{order.id.slice(0, 6)}</span>
+          <span className={`flex items-center gap-1 text-xs font-semibold ${isStale ? 'text-rose-400' : 'text-zinc-400'}`}>
             {isStale ? <WarningIcon className="h-3.5 w-3.5" /> : null}
             {timeAgo(order.createdAt)}
           </span>
         </div>
       </div>
 
-      <ul className="mb-4 space-y-2 border-y border-amber-900/20 py-2.5">
+      <ul className="mb-4 space-y-2 border-y border-white/5 py-2.5">
         {order.items.map((item) => (
           <li key={item.id} className="text-xs">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="font-bold text-amber-50">
+                <span className="font-bold text-zinc-100">
                   <span className="text-amber-400 font-extrabold">{item.quantity}×</span> {item.menuItemName}
                 </span>
                 {item.variantLabel ? (
-                  <span className="ml-1.5 text-[10px] font-semibold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                  <span className="ml-1.5 rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300">
                     {item.variantLabel}
                   </span>
                 ) : null}
                 {item.notes ? (
-                  <p className="mt-1 pl-3 text-[11px] text-amber-200/60 italic border-l-2 border-amber-500/40">
+                  <p className="mt-1 text-[11px] italic text-amber-200/90 font-medium">
                     &ldquo;{item.notes}&rdquo;
                   </p>
                 ) : null}
@@ -164,14 +162,16 @@ function OrderCard({ order, soundOn }: { order: AdminOrder; soundOn: boolean }) 
         ))}
       </ul>
 
-      <div className="flex items-center justify-between gap-2 pt-0.5">
-        <span className="text-sm font-extrabold text-amber-400">{formatPrice(total)}</span>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-zinc-100">
+          Total: <strong className="text-amber-400">{formatPrice(total)}</strong>
+        </span>
         {nextStatus ? (
           <button
             type="button"
             onClick={handleAdvance}
             disabled={isPending}
-            className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-extrabold text-black shadow-md shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 transition-all"
+            className="gold-gradient-btn rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 transition-all cursor-pointer"
           >
             {isPending ? 'Updating...' : `Mark ${ORDER_STATUS_LABEL[nextStatus]}`}
           </button>
@@ -202,26 +202,26 @@ function ServiceRequestCard({ request, onAcknowledge }: { request: ServiceReques
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 shadow-md">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#121215] px-4 py-3 shadow-md">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-300">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
           <Icon className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-sm font-black text-amber-50">
+          <p className="text-sm font-bold text-zinc-100">
             Table {request.tableNumber} · {label}
           </p>
-          <p className="text-[11px] text-amber-200/60">{timeAgo(request.createdAt)}</p>
+          <p className="text-xs text-zinc-400">{timeAgo(request.createdAt)}</p>
         </div>
       </div>
       <button
         type="button"
         onClick={handleAcknowledge}
         disabled={isPending}
-        className="flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-extrabold text-black shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 transition-all"
+        className="gold-gradient-btn flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 transition-all cursor-pointer"
       >
         <CheckIcon className="h-3.5 w-3.5" />
-        {isPending ? 'Clearing...' : 'Acknowledge'}
+        {isPending ? 'Clearing...' : 'Done'}
       </button>
     </div>
   );
@@ -251,11 +251,10 @@ function AlertsControl({ soundOn, onToggleSound }: { soundOn: boolean; onToggleS
           primeAudio();
           onToggleSound(!soundOn);
         }}
-        className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 transition-all ${
-          soundOn
+        className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 transition-all ${soundOn
             ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
             : 'border-amber-900/30 bg-black/30 text-amber-200/40'
-        }`}
+          }`}
       >
         {soundOn ? <BellIcon className="h-3.5 w-3.5" /> : <BellOffIcon className="h-3.5 w-3.5" />}
         {soundOn ? 'Chime Alerts Enabled' : 'Chimes Muted'}
@@ -396,37 +395,37 @@ export function AdminOrdersDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4 border-b border-amber-900/30 pb-5">
+      <div className="space-y-4 border-b border-white/10 pb-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-amber-50">Live Orders Board</h1>
-            <p className="text-xs text-amber-200/60">Real-time table orders from the dining area</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100">Live Orders</h1>
+            <p className="text-xs sm:text-sm text-zinc-400">Real-time table orders from dining area</p>
           </div>
           <AlertsControl soundOn={soundOn} onToggleSound={setSoundOn} />
         </div>
 
         {groups.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
               {groups.length} table{groups.length === 1 ? '' : 's'} active
             </span>
-            <span className="flex items-center gap-1.5 rounded-full border border-amber-900/30 bg-black/30 px-3 py-1 text-xs font-bold text-amber-200/70">
+            <span className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 px-3 py-1 text-xs font-semibold text-zinc-300">
               {orders.length} order{orders.length === 1 ? '' : 's'} in progress
             </span>
             {placedCount > 0 ? (
-              <span className="flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-bold text-rose-300">
+              <span className="flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-300">
                 {placedCount} awaiting kitchen
               </span>
             ) : null}
             {readyCount > 0 ? (
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
+              <span className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
                 {readyCount} ready to serve
               </span>
             ) : null}
             {serviceRequests.length > 0 ? (
-              <span className="flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-bold text-sky-300">
-                {serviceRequests.length} table request{serviceRequests.length === 1 ? '' : 's'}
+              <span className="flex items-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-300">
+                {serviceRequests.length} request{serviceRequests.length === 1 ? '' : 's'}
               </span>
             ) : null}
           </div>
@@ -434,8 +433,8 @@ export function AdminOrdersDashboard({
       </div>
 
       {serviceRequests.length > 0 ? (
-        <div className="space-y-2.5">
-          <h2 className="text-xs font-black tracking-widest text-amber-400 uppercase">Table Requests</h2>
+        <div className="space-y-3">
+          <h2 className="text-xs font-bold tracking-widest text-zinc-400 uppercase">Table Service Requests</h2>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {serviceRequests.map((request) => (
               <ServiceRequestCard key={request.id} request={request} onAcknowledge={handleAcknowledgeRequest} />
@@ -445,42 +444,42 @@ export function AdminOrdersDashboard({
       ) : null}
 
       {groups.length === 0 ? (
-        <div className="glass-panel mx-auto my-12 flex max-w-md flex-col items-center gap-3 rounded-2xl p-10 text-center border border-amber-900/30">
-          <BellIcon className="h-9 w-9 text-amber-400/70" />
-          <h2 className="text-base font-bold text-amber-50">No Active Orders</h2>
-          <p className="text-xs text-amber-200/60">
+        <div className="mx-auto my-12 flex max-w-md flex-col items-center gap-3 rounded-2xl p-10 text-center border border-white/10 bg-[#121215]">
+          <BellIcon className="h-9 w-9 text-zinc-600" />
+          <h2 className="text-base font-bold text-zinc-200">No Active Orders</h2>
+          <p className="text-xs text-zinc-400">
             Incoming table orders will appear here automatically with live alerts.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => {
             const totalOrders = group.sittings.reduce((n, s) => n + s.length, 0);
             const hasMultipleSittings = group.sittings.length > 1;
             return (
-              <div key={group.tableNumber} className="rounded-3xl border border-amber-500/20 bg-gradient-to-b from-[#1c1814] to-[#12100d] p-4 space-y-3 shadow-xl transition-colors hover:border-amber-500/35">
-                <div className="flex items-center justify-between border-b border-amber-900/30 pb-2.5">
+              <div key={group.tableNumber} className="rounded-2xl border border-white/10 bg-[#121215] p-4 space-y-3 shadow-xl transition-colors hover:border-white/20">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <h2 className="text-base font-black text-amber-300">
+                    <span className="h-2 w-2 rounded-full bg-amber-400" />
+                    <h2 className="text-base font-bold text-zinc-100">
                       Table {group.tableNumber}
                     </h2>
                   </div>
-                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-200">
+                  <span className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-0.5 text-xs font-semibold text-zinc-300">
                     {totalOrders} order{totalOrders === 1 ? '' : 's'}
                   </span>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {group.sittings.map((sitting, i) => (
-                    <div key={sitting[0]?.id ?? i} className="space-y-3">
+                    <div key={sitting[0]?.id ?? i} className="space-y-2.5">
                       {hasMultipleSittings ? (
                         <div className="flex items-center gap-2">
-                          <span className="h-px flex-1 bg-amber-900/30" />
-                          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-300">
+                          <span className="h-px flex-1 bg-white/5" />
+                          <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">
                             Sitting {i + 1}
                           </span>
-                          <span className="h-px flex-1 bg-amber-900/30" />
+                          <span className="h-px flex-1 bg-white/5" />
                         </div>
                       ) : null}
                       {sitting.map((order) => (

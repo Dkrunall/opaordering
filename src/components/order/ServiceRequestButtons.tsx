@@ -88,7 +88,7 @@ export function ServiceRequestButtons({ tableNumber }: { tableNumber: number }) 
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
         {(Object.keys(LABEL) as ServiceRequestType[]).map((type) => {
           const { idle, pending: pendingLabel, icon: Icon } = LABEL[type];
           const isPending = pending[type];
@@ -98,21 +98,21 @@ export function ServiceRequestButtons({ tableNumber }: { tableNumber: number }) 
               type="button"
               onClick={() => handleRequest(type)}
               disabled={isPending}
-              className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition-all ${
+              className={`flex items-center justify-center gap-2 rounded-xl border px-3 sm:px-4 py-3 sm:py-3.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 isPending
-                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 cursor-default'
-                  : 'border-amber-500/30 bg-black/40 text-amber-200 hover:border-amber-400/60 hover:bg-amber-500/10 active:scale-[0.98]'
+                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300 cursor-default'
+                  : 'border-white/10 bg-zinc-900/80 text-zinc-200 hover:border-amber-400/40 hover:bg-zinc-800 active:scale-95 shadow-sm'
               }`}
             >
-              {isPending ? <CheckIcon className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-              {isPending ? pendingLabel : idle}
+              {isPending ? <CheckIcon className="h-4 w-4 text-emerald-400" /> : <Icon className="h-4 w-4 text-amber-400" />}
+              <span className="truncate">{isPending ? pendingLabel : idle}</span>
             </button>
           );
         })}
       </div>
       {error ? (
-        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-400">
-          <WarningIcon className="h-3.5 w-3.5 shrink-0" />
+        <p className="flex items-center gap-1.5 text-xs font-medium text-rose-400">
+          <WarningIcon className="h-4 w-4 shrink-0" />
           {error}
         </p>
       ) : null}

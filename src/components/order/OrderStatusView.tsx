@@ -46,19 +46,19 @@ function StatusStepper({ status }: { status: OrderStatus }) {
         return (
           <div key={step.status} className="flex flex-1 flex-col items-center">
             <div className="flex w-full items-center">
-              <div className={`h-[3px] flex-1 ${i === 0 ? 'invisible' : done ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-amber-900/30'}`} />
+              <div className={`h-[2px] flex-1 ${i === 0 ? 'invisible' : done ? 'bg-amber-400' : 'bg-zinc-800'}`} />
               <div
-                className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-2 transition-all shadow-xl ${
+                className={`relative flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border transition-all ${
                   done
-                    ? 'border-amber-400 bg-amber-500 text-black shadow-amber-500/25 font-black'
-                    : 'border-amber-900/40 bg-amber-950/20 text-amber-200/40'
-                } ${isCurrent ? 'ring-4 ring-amber-400/30 scale-110 gold-glow-sm' : ''}`}
+                    ? 'border-amber-400 bg-amber-400 text-black font-extrabold shadow-md'
+                    : 'border-white/10 bg-zinc-900 text-zinc-500'
+                } ${isCurrent ? 'ring-2 ring-amber-400/40 scale-110' : ''}`}
               >
-                {done ? <step.icon className="h-5 w-5" /> : <span className="text-base">{i + 1}</span>}
+                {done ? <step.icon className="h-4 w-4 sm:h-5 sm:w-5" /> : <span className="text-xs sm:text-sm font-bold">{i + 1}</span>}
               </div>
-              <div className={`h-[3px] flex-1 ${i === STEPS.length - 1 ? 'invisible' : done ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-amber-900/30'}`} />
+              <div className={`h-[2px] flex-1 ${i === STEPS.length - 1 ? 'invisible' : done ? 'bg-amber-400' : 'bg-zinc-800'}`} />
             </div>
-            <p className={`mt-3 text-[11px] font-black text-center ${done ? 'text-amber-200' : 'text-amber-200/40'}`}>
+            <p className={`mt-2 text-[10px] sm:text-xs font-bold text-center ${done ? 'text-zinc-200' : 'text-zinc-500'}`}>
               {step.label}
             </p>
           </div>

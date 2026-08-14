@@ -20,7 +20,7 @@ export function SubcategoryRail({
   onSelect: (categoryId: string) => void;
 }) {
   return (
-    <div className="sticky top-[4.75rem] flex max-h-[calc(100vh-6rem)] w-16 sm:w-20 shrink-0 flex-col gap-2.5 sm:gap-3 overflow-y-auto no-scrollbar pb-4">
+    <div className="sticky top-[4.5rem] flex max-h-[calc(100vh-6rem)] w-16 sm:w-20 shrink-0 flex-col gap-2.5 overflow-y-auto no-scrollbar pb-6 pt-1">
       {categories.map((cat) => {
         const isActive = cat.id === activeCategoryId;
         const image = [cat.imageUrl, cat.items[0]?.imageUrl].find(isValidImageSrc) ?? null;
@@ -29,24 +29,26 @@ export function SubcategoryRail({
             key={cat.id}
             type="button"
             onClick={() => onSelect(cat.id)}
-            className="flex shrink-0 flex-col items-center gap-1.5"
+            className="flex shrink-0 flex-col items-center gap-1.5 active:scale-95 transition-transform cursor-pointer"
           >
             <div
-              className={`relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-2xl border-2 shadow-md transition-all ${
-                isActive ? 'border-amber-400 shadow-amber-500/30 scale-105' : 'border-amber-900/30 opacity-80'
+              className={`relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-xl border transition-all duration-300 ${
+                isActive
+                  ? 'border-amber-400 bg-zinc-800 shadow-md shadow-amber-500/20 scale-105'
+                  : 'border-white/10 bg-zinc-900/80 opacity-70 hover:opacity-100 hover:border-white/20'
               }`}
             >
               {image ? (
                 <Image src={image} alt={cat.name} fill sizes="64px" className="object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-amber-950/40">
-                  <PlateIcon className="h-6 w-6 text-amber-400/70" />
+                <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                  <PlateIcon className="h-5 w-5 text-zinc-500" />
                 </div>
               )}
             </div>
             <span
-              className={`text-center text-[10px] leading-tight line-clamp-2 ${
-                isActive ? 'font-black text-amber-300' : 'font-semibold text-amber-200/60'
+              className={`text-center text-[10px] leading-tight line-clamp-2 px-0.5 ${
+                isActive ? 'font-bold text-amber-300' : 'font-medium text-zinc-400'
               }`}
             >
               {cat.name}

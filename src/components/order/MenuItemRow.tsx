@@ -110,26 +110,26 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
 
   return (
     <div
-      className={`overflow-hidden rounded-3xl border transition-all duration-300 ${
+      className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
         expanded
-          ? 'border-amber-400/60 bg-gradient-to-b from-[#211b15] to-[#161310] shadow-2xl gold-glow-sm ring-1 ring-amber-400/30'
-          : 'border-amber-900/30 bg-[#161310]/95 hover:border-amber-500/40 hover:bg-[#1a1612]'
-      } ${!item.isAvailable ? 'opacity-50' : ''}`}
+          ? 'border-amber-400/60 bg-[#16161a] shadow-2xl ring-1 ring-amber-400/20'
+          : 'border-white/5 bg-[#121215] hover:border-white/15 hover:bg-[#16161a]'
+      } ${!item.isAvailable ? 'opacity-40' : ''}`}
     >
       <button
         type="button"
         disabled={!item.isAvailable}
         onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-center justify-between gap-2.5 sm:gap-3.5 p-3.5 sm:p-4 text-left disabled:cursor-not-allowed"
+        className="flex w-full items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 text-left disabled:cursor-not-allowed cursor-pointer"
       >
-        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
           {isValidImageSrc(item.imageUrl) ? (
-            <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-2xl border border-amber-500/30 shadow-md">
+            <div className="relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
               <Image
                 src={item.imageUrl}
                 alt={item.name}
                 fill
-                sizes="(min-width: 640px) 64px, 56px"
+                sizes="(min-width: 640px) 72px, 64px"
                 className="object-cover transition-transform duration-500 hover:scale-105"
                 unoptimized
               />
@@ -141,27 +141,27 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
               {item.dietaryType ? <DietaryBadge type={item.dietaryType} /> : null}
               {item.isAlcoholic ? <AlcoholicBadge /> : null}
             </div>
-            <p className="font-black text-amber-50 text-base leading-snug tracking-tight">{item.name}</p>
+            <p className="font-bold text-zinc-100 text-base sm:text-lg leading-snug tracking-tight">{item.name}</p>
             {item.description ? (
-              <p className="line-clamp-2 text-xs text-amber-200/70 leading-relaxed font-medium">{item.description}</p>
+              <p className="line-clamp-2 text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">{item.description}</p>
             ) : null}
-            <p className="text-sm font-black text-amber-400 tracking-tight pt-0.5">{priceLabel}</p>
+            <p className="text-sm sm:text-base font-extrabold text-amber-400 pt-0.5 tracking-tight">{priceLabel}</p>
           </div>
         </div>
 
         {item.isAvailable ? (
           <span
-            className={`flex shrink-0 items-center gap-1 rounded-2xl px-4 py-2 text-xs font-black transition-all shadow-md ${
+            className={`flex shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95 ${
               justAdded
-                ? 'bg-emerald-400 text-black shadow-emerald-500/30 scale-105'
+                ? 'bg-emerald-500 text-black shadow-emerald-500/30 scale-105'
                 : expanded
-                ? 'border border-amber-400/50 bg-amber-500/20 text-amber-300'
-                : 'bg-gradient-to-r from-amber-400 to-amber-500 text-black hover:brightness-110 active:scale-95'
+                ? 'border border-zinc-700 bg-zinc-800 text-zinc-300'
+                : 'gold-gradient-btn'
             }`}
           >
             {expanded ? 'Close' : justAdded ? (
               <>
-                <CheckIcon className="h-3.5 w-3.5" />
+                <CheckIcon className="h-4 w-4" />
                 Added
               </>
             ) : (
@@ -172,39 +172,39 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
       </button>
 
       {expanded && item.isAvailable ? (
-        <div className="space-y-4 border-t border-amber-900/30 bg-black/40 p-4 animate-fadeIn">
+        <div className="space-y-4 border-t border-white/5 bg-black/30 p-4 sm:p-5 animate-fadeIn">
           {hasVariants ? (
-            <div className="space-y-2">
-              <p className="text-xs font-black text-amber-300 tracking-wider uppercase">Choose Quantity:</p>
+            <div className="space-y-2.5">
+              <p className="text-xs font-bold text-zinc-400 tracking-wider uppercase">Choose Quantity:</p>
               <div className="space-y-2">
                 {item.variants.map((v) => {
                   const qty = variantQty(v.id);
                   return (
                     <div
                       key={v.id}
-                      className={`flex items-center justify-between gap-3 rounded-2xl border px-3.5 py-2.5 transition-all ${
-                        qty > 0 ? 'border-amber-400/50 bg-amber-500/10' : 'border-amber-900/40 bg-amber-950/10'
+                      className={`flex items-center justify-between gap-3 rounded-xl border px-3.5 py-3 transition-all ${
+                        qty > 0 ? 'border-amber-400/50 bg-amber-500/10' : 'border-white/5 bg-zinc-900/40'
                       }`}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-amber-100">{v.label}</p>
-                        <p className="text-xs font-black text-amber-400">{formatPrice(v.price)}</p>
+                        <p className="text-sm font-semibold text-zinc-200">{v.label}</p>
+                        <p className="text-xs sm:text-sm font-extrabold text-amber-400">{formatPrice(v.price)}</p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2.5 rounded-xl border border-amber-500/30 bg-black/60 p-1 shadow-inner">
+                      <div className="flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-black/60 p-1">
                         <button
                           type="button"
                           onClick={() => setVariantQty(v.id, qty - 1)}
                           disabled={qty === 0}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300 hover:bg-amber-500/20 active:scale-95 text-base font-extrabold transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-amber-400 hover:bg-white/10 active:scale-90 text-lg font-bold transition-all disabled:opacity-25 disabled:hover:bg-transparent"
                           aria-label={`Decrease ${v.label} quantity`}
                         >
                           −
                         </button>
-                        <span className="w-5 text-center text-sm font-black text-amber-50">{qty}</span>
+                        <span className="w-6 text-center text-sm font-bold text-zinc-100">{qty}</span>
                         <button
                           type="button"
                           onClick={() => setVariantQty(v.id, qty + 1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300 hover:bg-amber-500/20 active:scale-95 text-base font-extrabold transition-all"
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-amber-400 hover:bg-white/10 active:scale-90 text-lg font-bold transition-all"
                           aria-label={`Increase ${v.label} quantity`}
                         >
                           +
@@ -217,20 +217,20 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
             </div>
           ) : null}
 
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-amber-300/80 uppercase">Special Instructions</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Special Instructions</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder='E.g. "Less spicy", "No onion", "Extra ice"...'
               rows={2}
-              className="w-full resize-none rounded-2xl border border-amber-500/30 bg-black/60 px-4 py-2.5 text-xs text-amber-100 placeholder-amber-400/35 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+              className="w-full resize-none rounded-xl border border-white/10 bg-black/50 px-4 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
             />
           </div>
 
           {addFailed ? (
-            <p className="flex items-center gap-1.5 text-[11px] font-bold text-rose-400">
-              <WarningIcon className="h-3.5 w-3.5 shrink-0" />
+            <p className="flex items-center gap-1.5 text-xs font-medium text-rose-400">
+              <WarningIcon className="h-4 w-4 shrink-0" />
               Couldn&rsquo;t add — check your connection and try again.
             </p>
           ) : null}
@@ -240,43 +240,50 @@ export function MenuItemRow({ item, categoryName }: { item: MenuItem; categoryNa
               type="button"
               onClick={handleAdd}
               disabled={totalVariantQuantity === 0 || isAdding}
-              className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3 text-xs font-black text-black shadow-lg shadow-amber-500/25 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
+              className="gold-gradient-btn w-full rounded-xl py-3.5 px-4 text-sm font-bold flex items-center justify-between shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              <span>{isAdding ? 'Adding…' : 'Add to Order'}</span>
-              <span>·</span>
-              <span>{totalVariantQuantity > 0 ? formatPrice(totalVariantPrice) : `${item.variants.length} options`}</span>
+              <span>{isAdding ? 'Adding to order…' : 'Add to Order'}</span>
+              <span className="rounded-lg bg-black/20 px-2.5 py-0.5 text-xs font-black">
+                {totalVariantQuantity > 0 ? formatPrice(totalVariantPrice) : `${item.variants.length} options`}
+              </span>
             </button>
           ) : (
-            <div className="flex items-center justify-between gap-3 pt-1">
-              <div className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-black/60 p-1 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-300 hover:bg-amber-500/20 active:scale-95 text-base font-extrabold transition-all"
-                  aria-label="Decrease quantity"
-                >
-                  −
-                </button>
-                <span className="w-5 text-center text-sm font-black text-amber-50">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-300 hover:bg-amber-500/20 active:scale-95 text-base font-extrabold transition-all"
-                  aria-label="Increase quantity"
-                >
-                  +
-                </button>
+            <div className="space-y-3 pt-1">
+              {/* Stepper selector row */}
+              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/50 px-3 py-2">
+                <span className="text-xs font-semibold text-zinc-300">Quantity</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-zinc-900 text-amber-400 hover:bg-zinc-800 active:scale-90 text-base font-bold transition-all cursor-pointer"
+                    aria-label="Decrease quantity"
+                  >
+                    −
+                  </button>
+                  <span className="w-6 text-center text-sm font-bold text-zinc-100">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-zinc-900 text-amber-400 hover:bg-zinc-800 active:scale-90 text-base font-bold transition-all cursor-pointer"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
+              {/* Full-width Add to Order button with price pill */}
               <button
                 type="button"
                 onClick={handleAdd}
                 disabled={isAdding}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3 text-xs font-black text-black shadow-lg shadow-amber-500/25 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:brightness-100"
+                className="gold-gradient-btn w-full rounded-xl py-3.5 px-4 text-sm font-bold flex items-center justify-between shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 <span>{isAdding ? 'Adding…' : 'Add to Order'}</span>
-                <span>·</span>
-                <span>{formatPrice(item.price * quantity)}</span>
+                <span className="rounded-lg bg-black/20 px-2.5 py-0.5 text-xs font-black">
+                  {formatPrice(item.price * quantity)}
+                </span>
               </button>
             </div>
           )}

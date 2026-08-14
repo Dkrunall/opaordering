@@ -12,23 +12,23 @@ export default async function AdminMenuPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Menu</h1>
-        <p className="text-sm text-muted">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100">Menu Items</h1>
+        <p className="text-xs sm:text-sm text-zinc-400">
           {sections.reduce((n, s) => n + s.categories.length, 0)} categories · {totalItems} items
         </p>
       </div>
 
-      <div className="rounded-xl border border-card-border bg-card p-4">
-        <h2 className="mb-3 text-sm font-bold tracking-wide text-muted uppercase">Add category</h2>
+      <div className="rounded-2xl border border-white/10 bg-[#121215] p-4 sm:p-5 shadow-xl">
+        <h2 className="mb-3 text-xs font-bold tracking-wider text-zinc-400 uppercase">Create New Category</h2>
         <CategoryForm />
       </div>
 
       {sections.map((section) => (
-        <div key={section.section}>
-          <h2 className="mb-3 text-sm font-bold tracking-wide text-muted uppercase">{section.section}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div key={section.section} className="space-y-3">
+          <h2 className="text-xs font-bold tracking-widest text-zinc-400 uppercase">{section.section}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {section.categories.map((cat) => (
               <CategoryCard
                 key={cat.id}

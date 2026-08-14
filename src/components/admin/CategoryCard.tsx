@@ -33,21 +33,21 @@ export function CategoryCard({
   }
 
   return (
-    <div className="group relative rounded-2xl border border-amber-500/20 bg-gradient-to-b from-[#1c1814] to-[#12100d] p-4 shadow-lg transition-all hover:border-amber-500/40">
+    <div className="group relative rounded-2xl border border-white/10 bg-[#121215] p-3.5 sm:p-4 shadow-lg transition-all hover:border-amber-400/50 hover:bg-[#16161a]">
       <Link href={`/admin/menu/${categoryId}`} className="flex items-center gap-3">
         {isValidImageSrc(imageUrl) ? (
-          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-amber-500/30">
-            <Image src={imageUrl} alt={name} fill sizes="44px" className="object-cover" />
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10">
+            <Image src={imageUrl} alt={name} fill sizes="48px" className="object-cover" />
           </div>
         ) : (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10">
-            <PlateIcon className="h-5 w-5 text-amber-400/70" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-zinc-900">
+            <PlateIcon className="h-5 w-5 text-zinc-500" />
           </div>
         )}
-        <div className="min-w-0">
-          <p className="truncate font-bold text-amber-50 group-hover:text-amber-300 transition-colors text-base">{name}</p>
-          <p className="text-xs text-amber-200/60 font-medium mt-0.5">
-            {itemCount} item{itemCount === 1 ? '' : 's'}
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-bold text-zinc-100 group-hover:text-amber-300 transition-colors text-sm sm:text-base">{name}</p>
+          <p className="text-xs text-zinc-400 font-medium mt-0.5">
+            {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </p>
         </div>
       </Link>
@@ -55,7 +55,7 @@ export function CategoryCard({
         type="button"
         onClick={handleDelete}
         disabled={isPending}
-        className="absolute top-3 right-3 hidden text-xs font-bold text-rose-400 group-hover:block disabled:opacity-60 hover:text-rose-300 transition-colors"
+        className="absolute top-3 right-3 hidden text-xs font-semibold text-rose-400 group-hover:block disabled:opacity-60 hover:text-rose-300 transition-colors cursor-pointer"
       >
         Delete
       </button>

@@ -130,18 +130,17 @@ export function MenuBrowser({
   if (currentSection && !isSearching) {
     return (
       <OrderFrame tableNumber={tableNumber}>
-        <OrderHeader tableNumber={tableNumber} title={currentSection.section} onBack={() => setSelectedSection(null)} />
+        <OrderHeader
+          tableNumber={tableNumber}
+          title={currentSection.section}
+          onBack={() => setSelectedSection(null)}
+          dietFilter={dietFilter}
+          onDietFilterChange={setDietFilter}
+          onOpenFilters={() => setIsFilterModalOpen(true)}
+          filterActive={isLabelFilterActive(labelFilters)}
+        />
 
-        <div className="pt-3 px-4">
-          <VegDietFilter
-            value={dietFilter}
-            onChange={setDietFilter}
-            onOpenFilters={() => setIsFilterModalOpen(true)}
-            filterActive={isLabelFilterActive(labelFilters)}
-          />
-        </div>
-
-        <main className="flex-1 flex gap-2 sm:gap-3 px-3 sm:px-4 pt-3 pb-6">
+        <main className="flex-1 flex gap-2.5 sm:gap-3.5 px-3 sm:px-4 pt-2 pb-6">
           <SubcategoryRail
             categories={currentSection.categories}
             activeCategoryId={activeCategory?.id ?? null}
@@ -150,8 +149,8 @@ export function MenuBrowser({
 
           <div className="min-w-0 flex-1 space-y-3">
             {!activeCategory || activeCategory.items.length === 0 ? (
-              <div className="glass-panel p-8 text-center rounded-2xl border border-amber-900/30">
-                <p className="text-amber-200/60 text-sm font-medium">No items match your filter.</p>
+              <div className="p-8 text-center rounded-2xl border border-white/10 bg-[#121215]">
+                <p className="text-zinc-400 text-sm font-medium">No items match your filter.</p>
               </div>
             ) : (
               activeCategory.items.map((item) => (
@@ -185,36 +184,32 @@ export function MenuBrowser({
         />
 
         {isSearchOpen ? (
-          <div className="relative mx-3 mt-1 mb-2 px-1">
+          <div className="relative mx-3 mt-1.5 mb-2 px-1">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search delicious dishes, starters, drinks..."
-                className="w-full rounded-2xl border border-amber-400/40 bg-black/80 px-4 py-2.5 pl-10 text-xs text-amber-100 placeholder-amber-400/40 outline-none focus:border-amber-400 backdrop-blur-md shadow-2xl"
+                placeholder="Search dishes, cocktails, desserts..."
+                className="w-full rounded-2xl border border-white/15 bg-black/90 px-4 py-3 pl-11 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 backdrop-blur-md shadow-2xl"
                 autoFocus
               />
-              <SearchIcon className="pointer-events-none absolute left-3.5 top-3 h-3.5 w-3.5 text-amber-400/60" />
+              <SearchIcon className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-zinc-400" />
               {searchQuery ? (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/20 text-amber-300"
+                  className="absolute right-3.5 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 hover:text-white active:scale-90 cursor-pointer"
                 >
-                  <CloseIcon className="h-2.5 w-2.5" />
+                  <CloseIcon className="h-3 w-3" />
                 </button>
               ) : null}
             </div>
 
-            {/* Suggestions dropdown, anchored right under the search bar
-                and layered above the hero video — replaces the old flow
-                where results only showed up in a whole screen below the
-                hero that the customer had to scroll past to reach. */}
             {isSearching ? (
-              <div className="absolute inset-x-0 top-full mt-2 max-h-[60vh] overflow-y-auto rounded-2xl border border-amber-400/30 bg-[#14110e]/98 backdrop-blur-2xl shadow-2xl">
+              <div className="absolute inset-x-0 top-full mt-2 max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#121215]/98 backdrop-blur-2xl shadow-2xl">
                 {searchResults.length === 0 ? (
-                  <p className="p-4 text-center text-xs font-medium text-amber-200/60">
+                  <p className="p-5 text-center text-xs sm:text-sm font-medium text-zinc-400">
                     No items found matching &ldquo;{searchQuery}&rdquo;.
                   </p>
                 ) : (
@@ -223,22 +218,22 @@ export function MenuBrowser({
                       key={item.id}
                       type="button"
                       onClick={() => openSection(sectionName, categoryId)}
-                      className="flex w-full items-center gap-3 border-b border-amber-900/20 p-3 text-left last:border-0 hover:bg-amber-500/10"
+                      className="flex w-full items-center gap-3 border-b border-white/5 p-3.5 text-left last:border-0 hover:bg-white/5 active:bg-white/10 cursor-pointer"
                     >
                       {isValidImageSrc(item.imageUrl) ? (
-                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-amber-500/30">
-                          <Image src={item.imageUrl} alt={item.name} fill sizes="44px" className="object-cover" />
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10">
+                          <Image src={item.imageUrl} alt={item.name} fill sizes="48px" className="object-cover" />
                         </div>
                       ) : (
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-900/30 bg-amber-950/30">
-                          <PlateIcon className="h-5 w-5 text-amber-400/60" />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-zinc-900">
+                          <PlateIcon className="h-5 w-5 text-zinc-500" />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-amber-50">{item.name}</p>
-                        <p className="truncate text-[11px] font-semibold text-amber-400/80">{categoryName}</p>
+                        <p className="truncate text-sm sm:text-base font-bold text-zinc-100">{item.name}</p>
+                        <p className="truncate text-xs font-semibold text-zinc-400">{categoryName}</p>
                       </div>
-                      <span className="shrink-0 text-xs font-black text-amber-400">
+                      <span className="shrink-0 text-xs sm:text-sm font-extrabold text-amber-400">
                         {item.variants.length > 0
                           ? `From ${formatPrice(Math.min(...item.variants.map((v) => v.price)))}`
                           : formatPrice(item.price)}
@@ -252,13 +247,10 @@ export function MenuBrowser({
         ) : null}
       </HeroVideoHeader>
 
-      {/* Dims the hero video and page content behind the dropdown, and
-          closes search on tap-away — sits below the header's z-40 (so the
-          dropdown itself stays fully visible/interactive) but above
-          everything else. */}
+      {/* Dims background when search open */}
       {isSearchOpen && isSearching ? (
         <div
-          className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-30 bg-black/75 backdrop-blur-sm"
           onClick={() => {
             setSearchQuery('');
             setIsSearchOpen(false);
@@ -266,8 +258,11 @@ export function MenuBrowser({
         />
       ) : null}
 
-      <div className="px-4 pt-3 pb-6 space-y-3">
-        <p className="text-[11px] font-black tracking-widest text-amber-400/80 uppercase">Browse by Category</p>
+      <div className="px-4 pt-2 pb-8 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold tracking-widest text-zinc-400 uppercase">Categories</p>
+          <span className="text-[11px] font-semibold text-zinc-500">{sections.length} Sections</span>
+        </div>
         <MainCategoryCards sections={sections} onSelect={(section) => openSection(section)} />
       </div>
     </OrderFrame>

@@ -62,18 +62,10 @@ export function CartReview({ tableNumber }: { tableNumber: number }) {
 
   function handlePlaceOrder() {
     setError(null);
-    // Ask for notification permission as part of this click — a real user
-    // gesture — instead of hiding it behind a separate settings toggle, so
-    // customers are actually alerted when their order is ready even if
-    // they've switched away from this tab. Also unlocks the Web Audio
-    // context here for the same reason (see lib/alerts.ts).
     primeAudio();
     void requestNotificationPermission();
     startTransition(async () => {
       try {
-        // placeOrder reads the table's cart straight from the DB itself
-        // (not from `lines` here) so a line another guest added after this
-        // device's last sync isn't dropped — see lib/actions/orders.ts.
         await placeOrder(tableNumber);
       } catch (err) {
         unstable_rethrow(err);
@@ -87,14 +79,14 @@ export function CartReview({ tableNumber }: { tableNumber: number }) {
       <div className="glass-panel mx-auto my-8 flex max-w-md flex-col items-center gap-4 rounded-3xl p-8 text-center border border-amber-500/30 gold-glow-sm">
         <CartIcon className="h-10 w-10 text-amber-400 animate-bounce" />
         <div className="space-y-1">
-          <h2 className="text-lg font-black text-amber-50">Your Cart is Empty</h2>
-          <p className="text-xs text-amber-200/70 max-w-xs mx-auto leading-relaxed">
+          <h2 className="text-lg sm:text-xl font-black text-amber-50">Your Cart is Empty</h2>
+          <p className="text-xs sm:text-sm text-amber-200/80 max-w-xs mx-auto leading-relaxed">
             Browse our Opa digital menu and add your favorite dishes to place a table order.
           </p>
         </div>
         <Link
           href={`/order?table=${tableNumber}`}
-          className="mt-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-6 py-2.5 text-xs font-black text-black shadow-lg hover:brightness-110 active:scale-95 transition-all"
+          className="mt-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-6 py-3 text-xs sm:text-sm font-black text-black shadow-lg hover:brightness-110 active:scale-95 transition-all"
         >
           Browse Digital Menu →
         </Link>
@@ -103,143 +95,165 @@ export function CartReview({ tableNumber }: { tableNumber: number }) {
   }
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-5 pb-10">
       {/* Table confirmation header banner */}
-      <div className="flex items-center justify-between rounded-3xl border border-amber-500/30 bg-gradient-to-r from-[#1c1814] to-[#12100d] p-4 shadow-xl gold-glow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            <PlateIcon className="h-4.5 w-4.5" />
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#121215] p-3.5 sm:p-4 shadow-xl">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <PlateIcon className="h-5 w-5" />
           </span>
-          <div>
-            <p className="text-xs font-black text-amber-50 uppercase tracking-wide">OPA Table Order</p>
-            <p className="text-xs text-amber-200/70">Items will be served directly to Table {tableNumber}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs sm:text-sm font-bold text-zinc-100 uppercase tracking-wide">OPA Table Order</p>
+            <p className="truncate text-[11px] sm:text-xs text-zinc-400">Serving directly to Table {tableNumber}</p>
           </div>
         </div>
-        <span className="rounded-full border border-amber-400/50 bg-amber-400/15 px-3.5 py-1 text-xs font-black text-amber-300 shadow-inner">
+        <span className="shrink-0 whitespace-nowrap rounded-xl border border-amber-400/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-300">
           Table {tableNumber}
         </span>
       </div>
 
-      {/* Shared-cart identity: this is a group order — everyone at the table
-          sees this same list live, so make who's who legible. */}
-      <div className="flex items-center justify-between rounded-2xl border border-amber-900/30 bg-black/30 px-4 py-2.5">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-200/70">
-          <UsersIcon className="h-3.5 w-3.5" />
-          {guestCount > 1 ? `${guestCount} people ordering at this table` : 'Shared table cart'}
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-amber-200/70">
-          <span>You&rsquo;re</span>
+      {/* Shared table guest indicator & name editor */}
+      <div className="flex items-center justify-between rounded-2xl border border-amber-900/30 bg-black/40 px-4 py-2.5">
+        <div className="flex items-center gap-2 text-xs text-amber-200/80">
+          <UsersIcon className="h-4 w-4 text-amber-400" />
+          <span>Ordering as:</span>
           <GuestNameEditor guestName={guestName} onRename={setGuestName} />
         </div>
+        {guestCount > 1 ? (
+          <span className="text-xs font-bold text-amber-400">
+            {guestCount} guests ordering together
+          </span>
+        ) : null}
       </div>
 
-      {/* Cart items list */}
+      {/* Cart item cards list */}
       <div className="space-y-3">
         {lines.map((line) => (
-          <div key={line.id} className="overflow-hidden rounded-3xl border border-amber-500/25 bg-[#161310] p-4 shadow-xl transition-all hover:border-amber-500/40">
+          <div
+            key={line.id}
+            className="glass-card flex flex-col gap-3 rounded-3xl p-4 sm:p-5 border border-amber-500/20 shadow-xl"
+          >
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-1">
-                {line.guestId !== guestId ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-amber-400/80">
-                    <UsersIcon className="h-3 w-3" />
-                    Added by {line.guestName}
-                  </span>
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {line.imageUrl ? (
+                  <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-2xl border border-amber-500/30">
+                    <img src={line.imageUrl} alt={line.menuItemName} className="h-full w-full object-cover" />
+                  </div>
                 ) : null}
-                <p className="font-black text-amber-50 text-base">{line.menuItemName}</p>
-                {line.variantLabel ? (
-                  <span className="inline-block rounded-xl bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
-                    {line.variantLabel}
-                  </span>
-                ) : null}
-                {line.notes ? (
-                  <p className="text-xs text-amber-200/70 italic bg-black/40 p-2.5 rounded-xl border border-amber-900/30">
-                    &ldquo;{line.notes}&rdquo;
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base sm:text-lg font-black text-amber-50">{line.menuItemName}</p>
+                  {line.variantLabel ? (
+                    <p className="text-xs font-bold text-amber-400">{line.variantLabel}</p>
+                  ) : null}
+                  <p className="text-xs sm:text-sm font-black text-amber-300/90 pt-0.5">
+                    {formatPrice(line.unitPrice)} each
                   </p>
-                ) : null}
+                </div>
               </div>
-              <p className="shrink-0 font-black text-amber-400 text-base">
+
+              <span className="text-base sm:text-lg font-black text-amber-300">
                 {formatPrice(line.unitPrice * line.quantity)}
-              </p>
+              </span>
             </div>
 
-            <div className="mt-3 flex items-center justify-between border-t border-amber-900/30 pt-3">
-              <div className="flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-black/60 p-1 shadow-inner">
+            {line.notes ? (
+              <p className="rounded-xl border border-amber-900/30 bg-black/40 px-3 py-1.5 text-xs italic text-amber-200/80">
+                &ldquo;{line.notes}&rdquo;
+              </p>
+            ) : null}
+
+            <div className="flex items-center justify-between border-t border-amber-900/30 pt-3">
+              <span className="text-xs font-semibold text-amber-200/70">
+                Added by <strong className="text-amber-100">{line.guestName}</strong>
+              </span>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-black/60 p-1 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(line.id, line.quantity - 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300 hover:bg-amber-500/20 active:scale-90 text-base font-black transition-all"
+                    aria-label="Decrease quantity"
+                  >
+                    −
+                  </button>
+                  <span className="w-5 text-center text-xs sm:text-sm font-black text-amber-50">{line.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(line.id, line.quantity + 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300 hover:bg-amber-500/20 active:scale-90 text-base font-black transition-all"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => updateQuantity(line.id, line.quantity - 1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-xl text-amber-300 hover:bg-amber-500/20 text-sm font-black transition-colors"
-                  aria-label="Decrease quantity"
+                  onClick={() => removeLine(line.id)}
+                  className="rounded-lg p-1.5 text-amber-400/60 hover:text-rose-400 active:scale-90 transition-colors"
+                  aria-label="Remove item"
                 >
-                  −
-                </button>
-                <span className="w-5 text-center text-xs font-black text-amber-50">{line.quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => updateQuantity(line.id, line.quantity + 1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-xl text-amber-300 hover:bg-amber-500/20 text-sm font-black transition-colors"
-                  aria-label="Increase quantity"
-                >
-                  +
+                  <span className="text-sm font-black">✕</span>
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => removeLine(line.id)}
-                className="text-xs font-bold text-rose-400 hover:text-rose-300 transition-colors py-1 px-3 rounded-xl hover:bg-rose-500/10"
-              >
-                Remove Item
-              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Bill breakdown summary */}
-      <div className="rounded-3xl border border-amber-500/30 bg-[#161310] p-5 space-y-3 shadow-xl">
-        <div className="flex items-center justify-between text-xs text-amber-200/80">
-          <span>Subtotal ({lines.reduce((acc, l) => acc + l.quantity, 0)} items)</span>
-          <span className="font-bold text-amber-100">{formatPrice(totalPrice)}</span>
+      {/* Bill summary breakdown */}
+      <div className="glass-panel space-y-3 rounded-3xl p-5 border border-amber-500/30 shadow-2xl">
+        <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400">Order Summary</h3>
+        <div className="space-y-2 text-xs sm:text-sm">
+          <div className="flex justify-between text-amber-200/80">
+            <span>Subtotal ({lines.reduce((n, l) => n + l.quantity, 0)} items)</span>
+            <span className="font-bold text-amber-100">{formatPrice(totalPrice)}</span>
+          </div>
+          <div className="flex justify-between text-amber-200/80">
+            <span>Taxes &amp; Service Charges</span>
+            <span className="font-semibold text-amber-200/60">As applicable</span>
+          </div>
+          <div className="border-t border-amber-900/30 pt-3 flex justify-between text-base sm:text-lg font-black text-amber-50">
+            <span>Total Payable</span>
+            <span className="text-amber-300">{formatPrice(totalPrice)}</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between text-xs text-amber-200/80">
-          <span>Taxes &amp; Service Charge</span>
-          <span className="font-bold text-amber-100">Included</span>
-        </div>
-        <div className="h-[1px] bg-amber-900/40 my-1" />
-        <div className="flex items-center justify-between text-base font-black text-amber-50 pt-1">
-          <span>Total Payable</span>
-          <span className="text-amber-400 text-xl font-black">{formatPrice(totalPrice)}</span>
-        </div>
+
+        {error ? (
+          <p className="flex items-center gap-1.5 text-xs font-bold text-rose-400 pt-2">
+            <WarningIcon className="h-4 w-4 shrink-0" />
+            {error}
+          </p>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handlePlaceOrder}
+          className="mt-3 w-full rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 py-4 px-5 text-sm font-black text-black shadow-xl shadow-amber-500/25 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
+        >
+          {isPending ? (
+            <span>Sending to Kitchen…</span>
+          ) : (
+            <>
+              <span>Place Kitchen Order</span>
+              <span>·</span>
+              <span>{formatPrice(totalPrice)}</span>
+              <span className="text-base font-black">→</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {error ? (
-        <div className="flex items-center gap-2 rounded-2xl border border-rose-500/40 bg-rose-950/60 p-4 text-xs font-bold text-rose-300 shadow-xl">
-          <WarningIcon className="h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={handlePlaceOrder}
-        disabled={isPending}
-        className="w-full rounded-3xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 py-4 text-center font-black text-black shadow-2xl shadow-amber-500/30 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 text-base flex items-center justify-center gap-2 gold-glow"
-      >
-        {isPending ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-4 w-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
-            Sending Order to Kitchen...
-          </span>
-        ) : (
-          <>
-            <span>Send Order to Kitchen</span>
-            <span>·</span>
-            <span>{formatPrice(totalPrice)}</span>
-          </>
-        )}
-      </button>
+      <div className="text-center pt-2">
+        <Link
+          href={`/order?table=${tableNumber}`}
+          className="text-xs font-bold text-amber-400/80 hover:text-amber-300 transition-colors"
+        >
+          + Add more items from menu
+        </Link>
+      </div>
     </div>
   );
 }
-
-

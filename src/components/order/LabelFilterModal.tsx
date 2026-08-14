@@ -65,20 +65,20 @@ export function LabelFilterModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-16 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 p-0 sm:p-4 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-amber-500/30 bg-[#161310] shadow-2xl"
+        className="flex max-h-[85vh] sm:max-h-[80vh] w-full max-w-sm flex-col overflow-hidden rounded-t-[28px] sm:rounded-2xl border border-white/10 bg-[#121215] shadow-2xl pb-safe"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-amber-900/30 px-5 py-4">
-          <h2 className="text-base font-black text-amber-50">Filter by Labels</h2>
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <h2 className="text-base font-bold text-zinc-100">Filter Menu</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-amber-300 hover:bg-amber-500/10"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white cursor-pointer"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
@@ -96,8 +96,8 @@ export function LabelFilterModal({
             onChange={() => setDraft((d) => ({ ...d, nonAlcoholicOnly: !d.nonAlcoholicOnly }))}
           />
 
-          <div className="my-2 h-px bg-amber-900/30" />
-          <p className="pb-1 text-[11px] font-bold uppercase tracking-wider text-amber-400/70">Hide items containing</p>
+          <div className="my-2.5 h-px bg-white/10" />
+          <p className="pb-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">Allergen Filters</p>
 
           <CheckboxRow label="Contains Allergens" checked={allAllergensExcluded} onChange={toggleAllAllergens} />
           {KNOWN_ALLERGENS.map((allergen) => (
@@ -110,13 +110,13 @@ export function LabelFilterModal({
           ))}
         </div>
 
-        <div className="flex items-center gap-3 border-t border-amber-900/30 px-5 py-4">
+        <div className="flex items-center gap-3 border-t border-white/10 px-5 py-4">
           <button
             type="button"
             onClick={() => setDraft(DEFAULT_LABEL_FILTERS)}
-            className="rounded-full border border-amber-900/40 px-4 py-2.5 text-xs font-bold text-amber-200/70 hover:border-amber-500/40 transition-all"
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-white/5 transition-all cursor-pointer"
           >
-            Clear All
+            Reset
           </button>
           <button
             type="button"
@@ -124,9 +124,9 @@ export function LabelFilterModal({
               onApply(draft);
               onClose();
             }}
-            className="flex-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2.5 text-xs font-black text-black shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
+            className="gold-gradient-btn flex-1 rounded-xl px-4 py-2.5 text-xs font-bold shadow-md cursor-pointer"
           >
-            Apply
+            Apply Filters
           </button>
         </div>
       </div>
