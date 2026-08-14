@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ActionError } from '@/lib/actions/errors';
 import { NEXT_STATUS } from '@/lib/orderStatus';
+import { runAndNotifyIfReady } from '@/lib/push/notify';
 import type { OrderStatus } from '@/types/database';
 
 /** Advances a single order item to the given status. RLS restricts this to
@@ -20,7 +21,7 @@ export async function updateOrderItemStatus(orderItemId: string, status: OrderSt
 
   const { data: item, error: fetchError } = await supabase
     .from('order_items')
-    .select('status')
+    .select('status, order_id')
     .eq('id', orderItemId)
     .maybeSingle();
   if (fetchError) {
@@ -36,25 +37,27 @@ export async function updateOrderItemStatus(orderItemId: string, status: OrderSt
     );
   }
 
-  const { data: updated, error } = await supabase
-    .from('order_items')
-    .update({ status })
-    .eq('id', orderItemId)
-    .eq('status', item.status)
-    .select('id')
-    .maybeSingle();
+  await runAndNotifyIfReady(supabase, item.order_id, async () => {
+    const { data: updated, error } = await supabase
+      .from('order_items')
+      .update({ status })
+      .eq('id', orderItemId)
+      .eq('status', item.status)
+      .select('id')
+      .maybeSingle();
 
-  if (error) {
-    console.error('updateOrderItemStatus failed:', error);
-    throw new ActionError('Could not update item status.');
-  }
-  if (!updated) {
-    // Someone else (another staff device) already changed this item's
-    // status between our read and our write — not a real failure, just
-    // stale local state; the caller's optimistic UI will self-correct on
-    // the next realtime/refocus refetch.
-    throw new ActionError('That item was just updated by someone else — refreshing.');
-  }
+    if (error) {
+      console.error('updateOrderItemStatus failed:', error);
+      throw new ActionError('Could not update item status.');
+    }
+    if (!updated) {
+      // Someone else (another staff device) already changed this item's
+      // status between our read and our write — not a real failure, just
+      // stale local state; the caller's optimistic UI will self-correct on
+      // the next realtime/refocus refetch.
+      throw new ActionError('That item was just updated by someone else — refreshing.');
+    }
+  });
 }
 
 const STATUS_RANK: Record<OrderStatus, number> = { placed: 0, preparing: 1, ready: 2, served: 3 };
@@ -87,14 +90,16 @@ export async function advanceOrderItems(orderId: string) {
   const next = NEXT_STATUS[current];
   if (!next) return;
 
-  const { error } = await supabase
-    .from('order_items')
-    .update({ status: next })
-    .eq('order_id', orderId)
-    .eq('status', current);
+  await runAndNotifyIfReady(supabase, orderId, async () => {
+    const { error } = await supabase
+      .from('order_items')
+      .update({ status: next })
+      .eq('order_id', orderId)
+      .eq('status', current);
 
-  if (error) {
-    console.error('advanceOrderItems failed:', error);
-    throw new ActionError('Could not update order status.');
-  }
+    if (error) {
+      console.error('advanceOrderItems failed:', error);
+      throw new ActionError('Could not update order status.');
+    }
+  });
 }

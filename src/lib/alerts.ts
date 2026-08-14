@@ -104,10 +104,14 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return Notification.requestPermission();
 }
 
-export function showBrowserNotification(title: string, body: string) {
+export function showBrowserNotification(title: string, body: string, tag = 'opa-order') {
   if (!isNotificationSupported() || Notification.permission !== 'granted') return;
   try {
-    new Notification(title, { body, tag: 'opa-order' });
+    // Matching `tag` between this and a Web Push notification for the same
+    // event (see lib/push/notify.ts) makes the OS replace rather than
+    // stack them, in the rare case both arrive — e.g. the customer's tab
+    // is open when the push also lands.
+    new Notification(title, { body, tag });
   } catch {
     // Some mobile browsers (Android Chrome) only allow notifications via a
     // Service Worker registration and throw on the direct constructor —

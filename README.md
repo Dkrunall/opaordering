@@ -51,6 +51,25 @@ npm run dev
 - Customer flow: http://localhost:3000/order?table=1
 - Admin login: http://localhost:3000/admin/login
 
+## 5. (Optional) Enable Web Push notifications
+
+The app works fully without this — "order ready" alerts fall back to the
+in-tab Notification API (only fires while a tab is open). Web Push also
+reaches the customer's device with the tab/browser fully closed, and is
+what makes the "Add to Home Screen" install worth having.
+
+1. Run `supabase/migrations/0013_push_subscriptions.sql` (after the rest —
+   it depends on `orders`).
+2. Generate a VAPID key pair: `npx web-push generate-vapid-keys`.
+3. Add both to `.env.local` (and to your Vercel project's env vars for
+   production):
+   ```
+   NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+   VAPID_PRIVATE_KEY=...
+   ```
+4. If you ever swap out `public/opa-logo.jpg`, regenerate the PWA icon set
+   with `node scripts/generate-pwa-icons.js`.
+
 ## Project structure
 
 ```
@@ -59,9 +78,13 @@ scripts/
   generate-seed-sql.js   Regenerates 0003/0004 from scripts/menu_clean.json
   menu_clean.json        Raw menu extract (categories/items/variants) from Zillout
   create-admin.js        Creates a Supabase Auth user + admin_users row
+  generate-pwa-icons.js  Regenerates public/icons/* from public/opa-logo.jpg
+public/sw.js             Service worker — Web Push + install (see README §5)
 src/
   app/                   Next.js App Router routes
+  app/manifest.ts        PWA web app manifest
   lib/supabase/          Browser / server / middleware Supabase clients
+  lib/push/              Web Push send/subscribe helpers
   types/database.ts      Hand-written TS types matching the SQL schema
 ```
 

@@ -14,8 +14,11 @@ import {
 import { BellIcon, BellOffIcon, ClipboardIcon, PotIcon, SparkleIcon } from '@/components/icons';
 import { OrderFeedbackForm } from './OrderFeedbackForm';
 import { ServiceRequestButtons } from './ServiceRequestButtons';
+import { InstallPromptBanner } from './InstallPromptBanner';
 import type { OrderView } from '@/lib/data/orders';
 import { getTableRunningTotal, type TableRunningTotal } from '@/lib/data/tableRunningTotal';
+import { ensurePushSubscription } from '@/lib/push/subscribeClient';
+import { subscribeToOrderPush } from '@/lib/actions/push';
 import type { OrderStatus } from '@/types/database';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -87,6 +90,24 @@ export function OrderStatusView({
     setNotificationPermission(isNotificationSupported() ? getNotificationPermission() : 'unsupported');
   }, []);
 
+  // Opportunistically upgrade to real Web Push, which reaches this device
+  // even with the tab/browser fully closed — unlike the in-tab
+  // Notification API alert above, which only fires while a tab is open.
+  // Only runs once permission is already 'granted' (asked for at
+  // "Send Order to Kitchen" time, see CartReview.tsx) — this never prompts
+  // on its own, and fails silently if unsupported/misconfigured, since the
+  // in-tab alert already covers this order regardless.
+  useEffect(() => {
+    if (notificationPermission !== 'granted') return;
+    let cancelled = false;
+    ensurePushSubscription().then((sub) => {
+      if (!cancelled && sub) void subscribeToOrderPush(order.id, sub);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [notificationPermission, order.id]);
+
   // Shared by the live subscription below and the refetch fallbacks
   // (refocus + poll) so a status change is announced (chime/vibrate/
   // notification) exactly once no matter which path first learns about it.
@@ -95,15 +116,19 @@ export function OrderStatusView({
       if (next.status === 'ready' && statusRef.current !== 'ready') {
         playReadyChime();
         vibrateIfSupported([200, 100, 200]);
+        // Same tag as the Web Push notification for this order (see
+        // lib/push/notify.ts) — if both arrive (tab open when the push
+        // lands), the OS replaces rather than stacks them.
         showBrowserNotification(
           'Your order is ready!',
-          `Table ${order.tableNumber} — head to your table, staff is on the way.`
+          `Table ${order.tableNumber} — head to your table, staff is on the way.`,
+          `order-ready-${order.id}`
         );
       }
       statusRef.current = next.status;
       setOrder((prev) => (prev.status === next.status && prev.servedAt === next.served_at ? prev : { ...prev, status: next.status, servedAt: next.served_at }));
     },
-    [order.tableNumber]
+    [order.tableNumber, order.id]
   );
 
   useEffect(() => {
@@ -213,6 +238,8 @@ export function OrderStatusView({
 
   return (
     <div className="space-y-6 pb-8">
+      <InstallPromptBanner />
+
       {/* Main status tracking card */}
       <div className="overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-b from-[#1c1814] via-[#15120f] to-[#100e0b] p-6 shadow-2xl space-y-6 gold-glow-sm">
         <div className="flex items-center justify-between border-b border-amber-900/30 pb-4">
