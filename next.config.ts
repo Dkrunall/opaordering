@@ -12,6 +12,21 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'd1hddaam55e99y.cloudfront.net' },
     ],
   },
+  async headers() {
+    return [
+      {
+        // public/sw.js (see src/lib/push/subscribeClient.ts) — browsers can
+        // cache a service worker script aggressively by default, which
+        // would leave customers running a stale worker after a deploy.
+        // no-cache forces a revalidation check on every registration.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
